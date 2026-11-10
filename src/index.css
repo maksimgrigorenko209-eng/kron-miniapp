@@ -1,0 +1,80 @@
+:root {
+  font-family: Arial, sans-serif;
+  color: #f2f5f2;
+  background: #080c0a;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100%;
+  width: 100%;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+.app {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.section-card {
+  min-width: 0;
+}
+html,
+body,
+#root {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+.app {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  padding-left: 16px;
+  padding-right: 16px;
+  overflow: hidden;
+}
+
+.header {
+  width: 100%;
+  min-width: 0;
+}
+
+.status {
+  flex-shrink: 0;
+}
+
+.grid {
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.section-card {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.arrow {
+  right: 12px;
+}

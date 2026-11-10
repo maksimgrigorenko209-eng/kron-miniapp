@@ -1,0 +1,134 @@
+* {
+box-sizing: border-box;
+}
+.app {
+min-height: 100vh;
+width: 100%;
+padding: 24px 20px;
+background: #080c0a;
+color: #f2f5f2;
+font-family: Arial, sans-serif;
+}
+.header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+margin-bottom: 55px;
+}
+.logo {
+font-size: 30px;
+font-weight: 900;
+letter-spacing: 2px;
+color: #ffffff;
+line-height: 1;
+}
+.logo span,
+.welcome h1 span {
+color: #00d68f;
+}
+.status {
+color: #00d68f;
+font-size: 11px;
+letter-spacing: 2px;
+border: 1px solid #14583f;
+padding: 7px 12px;
+border-radius: 20px;
+}
+.welcome {
+margin-bottom: 45px;
+}
+.eyebrow {
+color: #00b879;
+font-size: 10px;
+letter-spacing: 2px;
+font-weight: bold;
+}
+.welcome h1,
+.inner-page h1 {
+font-size: 36px;
+line-height: 1.15;
+margin: 15px 0;
+}
+.subtitle {
+color: #929c96;
+font-size: 14px;
+line-height: 1.6;
+}
+.sections h2 {
+font-size: 19px;
+margin-bottom: 18px;
+}
+.grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 13px;
+}
+.section-card {
+position: relative;
+min-height: 145px;
+padding: 18px;
+text-align: left;
+border: 1px solid #1b3529;
+border-radius: 17px;
+background: #101a14;
+color: white;
+display: flex;
+flex-direction: column;
+gap: 10px;
+}
+.card-icon {
+font-size: 25px;
+}
+.section-card strong {
+font-size: 15px;
+}
+.section-card small {
+color: #8b9a91;
+font-size: 11px;
+}
+.arrow {
+position: absolute;
+right: 15px;
+top: 15px;
+color: #00d68f;
+}
+.inner-page {
+min-height: 65vh;
+}
+.back {
+background: none;
+border: none;
+color: #00d68f;
+font-size: 14px;
+padding: 0;
+margin-bottom: 35px;
+}
+.currency-list {
+display: flex;
+flex-direction: column;
+gap: 12px;
+margin-top: 25px;
+}
+.currency-card {
+background: #101a14;
+border: 1px solid #1b3529;
+border-radius: 14px;
+padding: 20px;
+display: flex;
+align-items: center;
+gap: 12px;
+}
+.currency-card small {
+display: block;
+color: #929c96;
+font-size: 11px;
+margin-left: auto;
+}
+footer {
+text-align: center;
+color: #536158;
+font-size: 9px;
+letter-spacing: 1px;
+margin-top: 55px;
+padding-bottom: 15px;
+}
