@@ -974,3 +974,38 @@ textarea.payment-input {
   font-size: 10px;
   line-height: 1.25;
 }
+
+
+/* Постоянная плавающая кнопка поддержки KRON */
+.floating-support {
+  position: fixed;
+  right: 18px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 9999;
+  display: flex;
+  width: 54px;
+  height: 54px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 214, 154, 0.55);
+  border-radius: 50%;
+  background: linear-gradient(145deg, #192b21, #0b130e);
+  box-shadow: 0 5px 22px rgba(0, 214, 154, 0.2);
+  color: #55dfb2;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.floating-support svg {
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.floating-support:active {
+  transform: scale(0.94);
+}

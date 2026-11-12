@@ -115,7 +115,6 @@ function App() {
     { icon: '💱', title: 'Курс валют', desc: 'Актуальные курсы валют' },
     { icon: '🔄', title: 'Обмен', desc: 'Обменные операции' },
     { icon: '🎁', title: 'Предложения', desc: 'Специальные предложения' },
-    { icon: '🎧', title: 'Поддержка', desc: 'Связь с менеджером' },
   ];
 
   const selectedCrypto = cryptoCurrencies.find(
@@ -383,18 +382,7 @@ function App() {
                 <button
                   className="section-card"
                   key={item.title}
-                  onClick={() => {
-                    if (item.title === 'Поддержка') {
-                      const tg = window.Telegram?.WebApp;
-                      if (tg?.openTelegramLink) {
-                        tg.openTelegramLink('https://t.me/+447836748555');
-                      } else {
-                        window.location.href = 'https://t.me/+447836748555';
-                      }
-                      return;
-                    }
-                    setPage(item.title);
-                  }}
+                  onClick={() => setPage(item.title)}
                 >
                   <span className="card-icon">{item.icon}</span>
                   <strong>{item.title}</strong>
@@ -1058,6 +1046,26 @@ function App() {
         </section>
       )}
 
+      <button
+        className="floating-support"
+        aria-label="Поддержка KRON"
+        title="Поддержка KRON"
+        onClick={() => {
+          const tg = window.Telegram?.WebApp;
+          if (tg?.openTelegramLink) {
+            tg.openTelegramLink('https://t.me/+447836748555');
+          } else {
+            window.location.href = 'https://t.me/+447836748555';
+          }
+        }}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 13v-1a9 9 0 0 1 18 0v1" />
+          <rect x="3" y="12" width="4" height="7" rx="2" />
+          <rect x="17" y="12" width="4" height="7" rx="2" />
+          <path d="M21 17v1a3 3 0 0 1-3 3h-3" />
+        </svg>
+      </button>
       <footer>KRON © 2026 · ALL RIGHTS RESERVED</footer>
     </main>
   );
