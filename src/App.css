@@ -835,3 +835,142 @@ textarea.payment-input {
   font-size: 15px;
   flex-shrink: 0;
 }
+
+
+/* Компактные кнопки статуса и истории заявок */
+.quick-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 22px;
+}
+
+.quick-action {
+  display: flex;
+  min-width: 104px;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #aab8af;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.quick-action-icon {
+  display: flex;
+  width: 54px;
+  height: 54px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 214, 154, 0.28);
+  border-radius: 50%;
+  background: linear-gradient(145deg, #14231b, #0d1510);
+  box-shadow: 0 5px 18px rgba(0, 214, 154, 0.08);
+  color: #55dfb2;
+  font-size: 27px;
+  line-height: 1;
+  transition: transform 160ms ease, border-color 160ms ease;
+}
+
+.quick-action:active .quick-action-icon {
+  transform: scale(0.94);
+  border-color: #00d69a;
+}
+
+.quick-action-icon svg {
+  width: 23px;
+  height: 23px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.history-refresh {
+  width: 100%;
+  min-height: 42px;
+  margin: 0 0 14px;
+  border: 1px solid rgba(0, 214, 154, 0.2);
+  border-radius: 12px;
+  background: #101a14;
+  color: #55dfb2;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.history-order {
+  margin-top: 12px;
+  padding: 15px;
+  border: 1px solid rgba(157, 190, 171, 0.14);
+  border-radius: 15px;
+  background: linear-gradient(145deg, #131c17, #0d1410);
+}
+
+.history-order-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.history-order-top strong {
+  color: #eaf2ed;
+  font-size: 12px;
+}
+
+.history-order-status {
+  color: #aab8af;
+  font-size: 10px;
+  text-align: right;
+}
+
+.history-order-status.awaiting_payment {
+  color: #e7bd70;
+}
+
+.history-order-status.awaiting_review {
+  color: #69c9ed;
+}
+
+.history-order-status.confirmed {
+  color: #55dfb2;
+}
+
+.history-order-amount {
+  margin: 14px 0 4px;
+  color: #55dfb2;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.history-order-total,
+.history-order-date {
+  margin: 5px 0;
+  color: #89978e;
+  font-size: 11px;
+}
+
+.history-open {
+  margin-top: 12px;
+  padding: 8px 0 0;
+  border: 0;
+  background: transparent;
+  color: #55dfb2;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+
+/* Компактный курс местной валюты */
+.currency-card-local .currency-details > div:first-child strong {
+  max-width: 92px;
+  white-space: normal;
+  text-align: right;
+  font-size: 10px;
+  line-height: 1.25;
+}

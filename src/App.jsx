@@ -14,14 +14,14 @@ const currencies = [
   { id: 'USDT', name: 'Tether', rate: '1 USDT = 1 USD', commission: 4, icon: '₮' },
   { id: 'USD', name: 'Доллар США', rate: '1 USD = 1 USD', commission: 4, icon: '$' },
   { id: 'EUR', name: 'Евро', rate: '1 EUR = 1,10 USD', commission: 5, icon: '€' },
-  { id: 'LOCAL', name: 'Местная валюта', rate: 'Уточняйте у менеджера', commission: 2, icon: '₽' },
+  { id: 'LOCAL', name: 'Местная валюта', rate: '1 USDT = курс банка', commission: 2, icon: '₽' },
 ];
 
 const cryptoCurrencies = [
   { id: 'USDT', limit: 20, max: 10000 },
   { id: 'USDC', limit: 20, max: 10000 },
-  { id: 'BTC', limit: 50, max: 10000 },
-  { id: 'ETH', limit: 30, max: 10000 },
+  { id: 'BTC', limit: 0.01, max: 1 },
+  { id: 'ETH', limit: 0.01, max: 10 },
 ];
 
 const networksByCrypto = {
@@ -51,12 +51,12 @@ const addressesByCrypto = {
 };
 
 const wallets = [
-  { id: 'trust', name: 'Trust Wallet', url: 'https://trustwallet.com/', icon: WalletTrust },
-  { id: 'binance', name: 'Binance', url: 'https://www.binance.com/', icon: ExchangeBinance },
-  { id: 'bybit', name: 'Bybit', url: 'https://www.bybit.com/', icon: ExchangeBybit },
-  { id: 'okx', name: 'OKX Wallet', url: 'https://www.okx.com/web3', icon: WalletOkx },
-  { id: 'metamask', name: 'MetaMask', url: 'https://metamask.io/', icon: WalletMetamask },
-  { id: 'tokenpocket', name: 'TokenPocket', url: 'https://www.tokenpocket.pro/', icon: WalletTokenPocket },
+  { id: 'trust', name: 'Trust Wallet', url: 'https:' + '//link.trustwallet.com', icon: WalletTrust },
+  { id: 'binance', name: 'Binance', url: 'https:' + '//www.binance.com/', icon: ExchangeBinance },
+  { id: 'bybit', name: 'Bybit', url: 'https:' + '//www.bybit.com/', icon: ExchangeBybit },
+  { id: 'okx', name: 'OKX Wallet', url: 'https:' + '//web3.okx.com/', icon: WalletOkx },
+  { id: 'metamask', name: 'MetaMask', url: 'https:' + '//metamask.io/', icon: WalletMetamask },
+  { id: 'tokenpocket', name: 'TokenPocket', url: 'https:' + '//www.tokenpocket.pro/', icon: WalletTokenPocket },
 ];
 
 const countries = [
@@ -95,6 +95,9 @@ function App() {
   );
   const [orderStatus, setOrderStatus] = useState('');
   const [statusLoading, setStatusLoading] = useState(false);
+  const [userOrders, setUserOrders] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminOrders, setAdminOrders] = useState([]);
   const [adminLoading, setAdminLoading] = useState(false);
@@ -182,6 +185,20 @@ function App() {
       setOrderError(error.message || 'Не удалось загрузить статус заявки.');
     } finally {
       setStatusLoading(false);
+    }
+  };
+
+  const loadUserOrders = async () => {
+    setHistoryLoading(true);
+    setHistoryError('');
+
+    try {
+      const result = await sendOrderAction('my_orders');
+      setUserOrders(result.orders || []);
+    } catch (error) {
+      setHistoryError(error.message || 'Не удалось загрузить историю заявок.');
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -366,7 +383,18 @@ function App() {
                 <button
                   className="section-card"
                   key={item.title}
-                  onClick={() => setPage(item.title)}
+                  onClick={() => {
+                    if (item.title === 'Поддержка') {
+                      const tg = window.Telegram?.WebApp;
+                      if (tg?.openTelegramLink) {
+                        tg.openTelegramLink('https://t.me/+447836748555');
+                      } else {
+                        window.location.href = 'https://t.me/+447836748555';
+                      }
+                      return;
+                    }
+                    setPage(item.title);
+                  }}
                 >
                   <span className="card-icon">{item.icon}</span>
                   <strong>{item.title}</strong>
@@ -376,14 +404,37 @@ function App() {
               ))}
             </div>
 
-            {orderId && (
-              <button className="primary-button" onClick={() => {
-                loadOrderStatus();
-                setPage('Статус');
-              }}>
-                Статус заявки
+            <div className="quick-actions">
+              {orderId && (
+                <button
+                  className="quick-action"
+                  onClick={() => {
+                    loadOrderStatus();
+                    setPage('Статус');
+                  }}
+                >
+                  <span className="quick-action-icon">◷</span>
+                  <span>Статус заявки</span>
+                </button>
+              )}
+
+              <button
+                className="quick-action"
+                onClick={() => {
+                  setPage('История заявок');
+                  loadUserOrders();
+                }}
+              >
+                <span className="quick-action-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3.5 12a8.5 8.5 0 1 0 2.7-6.25L3.5 8.5" />
+                    <path d="M3.5 3.5v5h5" />
+                    <path d="M12 7v5l3.2 2" />
+                  </svg>
+                </span>
+                <span>История заявок</span>
               </button>
-            )}
+            </div>
 
             {isAdmin && (
               <button className="primary-button" onClick={() => {
@@ -415,7 +466,7 @@ function App() {
             <div className="currency-page">
               <div className="currency-list">
                 {currencies.map((currency) => (
-                  <div className="currency-card" key={currency.id}>
+                  <div className={`currency-card ${currency.id === 'LOCAL' ? 'currency-card-local' : ''}`} key={currency.id}>
                     <div className="currency-icon">{currency.icon}</div>
                     <div className="currency-info">
                       <strong>
@@ -718,7 +769,104 @@ function App() {
                       key={wallet.id}
                       type="button"
                       className="wallet-button"
-                      onClick={() => window.open(wallet.url, '_blank', 'noopener,noreferrer')}
+                      onClick={() => {
+                        const address = addressesByCrypto[selectedCurrency][selectedNetwork];
+                        const amountText = Number(totalAmount).toFixed(8).replace(/\.?0+$/, '');
+
+                        const trustAssets = {
+                          'USDT:TRC20': 'c195_tTR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+                          'USDT:ERC20': 'c60_t0xdAC17F958D2ee523a2206206994597C13D831ec7',
+                          'USDT:BEP20': 'c20000714_t0x55d398326f99059fF775485246999027B3197955',
+                          'USDC:BEP20': 'c20000714_t0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
+                          'USDC:ERC20': 'c60_t0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+                          'USDC:Solana': 'c501_tEPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+                          'BTC:Bitcoin': 'c0',
+                          'ETH:BEP20': 'c20000714_t0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+                        };
+
+                        const evmAssets = {
+                          'USDT:ERC20': {
+                            contract: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+                            chainId: 1,
+                            decimals: 6,
+                          },
+                          'USDT:BEP20': {
+                            contract: '0x55d398326f99059fF775485246999027B3197955',
+                            chainId: 56,
+                            decimals: 18,
+                          },
+                          'USDC:ERC20': {
+                            contract: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+                            chainId: 1,
+                            decimals: 6,
+                          },
+                          'USDC:BEP20': {
+                            contract: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
+                            chainId: 56,
+                            decimals: 18,
+                          },
+                          'ETH:BEP20': {
+                            contract: '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+                            chainId: 56,
+                            decimals: 18,
+                          },
+                        };
+
+                        const selection = `${selectedCurrency}:${selectedNetwork}`;
+                        let launchUrl = wallet.url;
+
+                        if (wallet.id === 'trust' && trustAssets[selection]) {
+                          launchUrl =
+                            'https://link.trustwallet.com/send?asset=' +
+                            encodeURIComponent(trustAssets[selection]) +
+                            '&address=' + encodeURIComponent(address) +
+                            '&amount=' + encodeURIComponent(amountText);
+                        } else if (wallet.id === 'metamask') {
+                          const asset = evmAssets[selection];
+
+                          if (asset) {
+                            const fixedAmount = Number(totalAmount).toFixed(8);
+                            const [whole, fraction = ''] = fixedAmount.split('.');
+                            const padded = (fraction + '0'.repeat(asset.decimals + 1))
+                              .slice(0, asset.decimals + 1);
+
+                            let rawAmount =
+                              BigInt(whole) * (10n ** BigInt(asset.decimals)) +
+                              BigInt(padded.slice(0, asset.decimals) || '0');
+
+                            if (Number(padded[asset.decimals]) >= 5) {
+                              rawAmount += 1n;
+                            }
+
+                            launchUrl =
+                              `https://link.metamask.io/send/${asset.contract}@${asset.chainId}/transfer` +
+                              `?address=${encodeURIComponent(address)}&uint256=${rawAmount}`;
+                          } else {
+                            launchUrl =
+                              'https://link.metamask.io/dapp/' +
+                              encodeURIComponent(window.location.href);
+                          }
+                        } else if (wallet.id === 'tokenpocket') {
+                          const chainByNetwork = {
+                            TRC20: 'TRON',
+                            ERC20: 'ETH',
+                            BEP20: 'BSC',
+                            Solana: 'SOL',
+                            Bitcoin: 'BTC',
+                          };
+
+                          launchUrl =
+                            'tpdapp://open?params=' +
+                            encodeURIComponent(JSON.stringify({
+                              url: window.location.href,
+                              chain: chainByNetwork[selectedNetwork] || 'ETH',
+                              source: 'KRON',
+                            }));
+                        }
+
+                        navigator.clipboard?.writeText(address).catch(() => {});
+                        window.location.href = launchUrl;
+                      }}
                     >
                       <span className="wallet-button-main">
                         <WalletIcon size={30} variant="branded" />
@@ -749,6 +897,68 @@ function App() {
                 {orderLoading ? 'Отправляем...' : 'Я отправил средства'}
               </button>
               {orderError && <p className="calculator-note">{orderError}</p>}
+            </div>
+          ) : page === 'История заявок' ? (
+            <div className="payment-page">
+              <button
+                className="history-refresh"
+                onClick={loadUserOrders}
+                disabled={historyLoading}
+              >
+                {historyLoading ? 'Загружаем...' : 'Обновить историю'}
+              </button>
+
+              {historyError && <p className="status-message">{historyError}</p>}
+
+              {historyLoading && userOrders.length === 0 ? (
+                <p className="admin-empty">Загружаем ваши заявки...</p>
+              ) : userOrders.length === 0 ? (
+                <p className="admin-empty">У вас пока нет заявок.</p>
+              ) : userOrders.map((order) => (
+                <div className="history-order" key={order.id}>
+                  <div className="history-order-top">
+                    <strong>{order.id}</strong>
+                    <span className={`history-order-status ${order.status}`}>
+                      {{
+                        awaiting_payment: 'Ожидает оплаты',
+                        awaiting_review: 'На проверке',
+                        confirmed: 'Подтверждена',
+                      }[order.status] || order.status}
+                    </span>
+                  </div>
+
+                  <p className="history-order-amount">
+                    {order.amount} {order.crypto}
+                  </p>
+
+                  {order.total && (
+                    <p className="history-order-total">
+                      К оплате: {order.total} {order.crypto}
+                    </p>
+                  )}
+
+                  <p className="history-order-date">
+                    {order.created_at
+                      ? new Date(order.created_at).toLocaleString('ru-RU', {
+                          timeZone: 'Europe/Chisinau',
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })
+                      : 'Дата не указана'}
+                  </p>
+
+                  <button
+                    className="history-open"
+                    onClick={() => {
+                      setOrderId(order.id);
+                      setOrderStatus(order.status);
+                      setPage('Статус');
+                    }}
+                  >
+                    Посмотреть статус →
+                  </button>
+                </div>
+              ))}
             </div>
           ) : page === 'Статус' ? (
             <div className="payment-page">
