@@ -1009,3 +1009,243 @@ textarea.payment-input {
 .floating-support:active {
   transform: scale(0.94);
 }
+
+
+/* Обновлённая главная KRON */
+.home-hero {
+  position: relative;
+  margin: 0 0 20px;
+  padding: 27px 20px 21px;
+  overflow: hidden;
+  border: 1px solid rgba(107, 170, 137, 0.17);
+  border-radius: 25px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(0, 214, 154, 0.13), transparent 65%),
+    linear-gradient(145deg, rgba(21, 34, 27, 0.97), rgba(10, 17, 13, 0.98));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.035), 0 14px 35px rgba(0,0,0,0.16);
+}
+
+.home-hero::after {
+  position: absolute;
+  top: -75px;
+  right: -55px;
+  width: 190px;
+  height: 190px;
+  border: 1px solid rgba(71, 205, 151, 0.09);
+  border-radius: 50%;
+  box-shadow: 0 0 0 18px rgba(71,205,151,0.018), 0 0 0 38px rgba(71,205,151,0.012);
+  content: "";
+  pointer-events: none;
+}
+
+.home-hero .eyebrow {
+  margin-bottom: 13px;
+  font-size: 9px;
+  letter-spacing: 1.8px;
+}
+
+.home-hero h1 {
+  position: relative;
+  z-index: 1;
+  max-width: 330px;
+  margin: 0;
+  color: #f1f7f3;
+  font-size: clamp(27px, 7vw, 35px);
+  font-weight: 780;
+  letter-spacing: -1.35px;
+  line-height: 1.12;
+}
+
+.home-hero h1 span {
+  color: #53d9a8;
+  text-shadow: 0 0 22px rgba(0,214,154,0.17);
+}
+
+.home-subtitle {
+  position: relative;
+  z-index: 1;
+  margin: 11px 0 20px;
+  color: #91a097;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.home-primary-action {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  min-height: 62px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border: 1px solid rgba(104, 237, 184, 0.38);
+  border-radius: 17px;
+  background: linear-gradient(110deg, #087b59, #0ca879 55%, #087b59);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.13), 0 8px 22px rgba(0,153,105,0.17);
+  color: #f4fff9;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.65px;
+  transition: transform 160ms ease, filter 160ms ease;
+}
+
+.home-primary-action:active {
+  transform: scale(0.985);
+  filter: brightness(0.94);
+}
+
+.home-primary-arrow {
+  font-size: 18px;
+  opacity: 0.85;
+}
+
+.home-secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 25px;
+}
+
+.home-secondary-card {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 139px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 15px 13px;
+  overflow: hidden;
+  border: 1px solid rgba(157, 190, 171, 0.14);
+  border-radius: 19px;
+  background:
+    radial-gradient(circle at 85% 8%, rgba(0,214,154,0.09), transparent 48%),
+    linear-gradient(145deg, #17231c, #0d1511 78%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.025), 0 8px 20px rgba(0,0,0,0.12);
+}
+
+.home-card-icon {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: auto;
+  border: 1px solid rgba(75, 213, 158, 0.2);
+  border-radius: 11px;
+  background: rgba(0, 214, 154, 0.08);
+  color: #65dcb0;
+  font-size: 17px;
+}
+
+.home-secondary-card strong {
+  max-width: 100%;
+  color: #edf5f0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.25px;
+  line-height: 1.35;
+}
+
+.home-secondary-card small {
+  margin-top: 5px;
+  color: #85948b;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.home-card-arrow {
+  position: absolute;
+  top: 15px;
+  right: 14px;
+  color: #6e9d86;
+  font-size: 14px;
+}
+
+.home-utility {
+  margin-top: 4px;
+}
+
+@media (max-width: 380px) {
+  .home-hero {
+    padding: 23px 15px 17px;
+  }
+
+  .home-primary-action {
+    min-height: 58px;
+    font-size: 12px;
+  }
+
+  .home-secondary-card {
+    min-height: 132px;
+    padding: 13px 11px;
+  }
+
+  .home-secondary-card strong {
+    font-size: 10px;
+  }
+}
+
+
+/* Фирменные контурные иконки KRON */
+.home-card-icon {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #65dcb0;
+  filter: drop-shadow(0 0 5px rgba(0, 214, 154, 0.28));
+}
+
+.home-card-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Более мягкие и компактные иконки KRON */
+.home-card-icon {
+  width: 34px;
+  height: 34px;
+  color: #62cda5;
+  filter: drop-shadow(0 0 2px rgba(0, 214, 154, 0.14));
+}
+
+.home-card-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 1.3;
+}
+
+.home-secondary-card:nth-child(1) .home-card-icon svg {
+  transform: rotate(-10deg) scale(0.88);
+}
+
+.home-secondary-card:nth-child(2) .home-card-icon svg {
+  transform: rotate(8deg) scale(0.88);
+}
+
+/* Единый угол и лёгкий объём иконок KRON */
+.home-card-icon {
+  width: 34px;
+  height: 34px;
+  color: #75dfb7;
+  filter:
+    drop-shadow(0 1px 1px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 2px rgba(0, 214, 154, 0.16));
+}
+
+.home-card-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 1.45;
+  transform: rotate(7deg) scale(0.9);
+}
+
+.home-secondary-card:nth-child(1) .home-card-icon svg,
+.home-secondary-card:nth-child(2) .home-card-icon svg {
+  transform: rotate(7deg) scale(0.9);
+}

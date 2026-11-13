@@ -363,35 +363,50 @@ function App() {
 
       {page === 'home' ? (
         <>
-          <section className="welcome">
+          <section className="home-hero">
             <p className="eyebrow">ВАША ФИНАНСОВАЯ ПЛАТФОРМА</p>
-            <h1>
-              Добро пожаловать
-              <br />
-              в <span>KRON</span>
-            </h1>
-            <p className="subtitle">
-              Управляйте своими операциями в одном месте.
+            <h1>Финансовые решения <span>KRON</span></h1>
+            <p className="home-subtitle">
+              Вывод криптовалюты · Актуальные курсы · Быстрое оформление
             </p>
+            <button
+              className="home-primary-action"
+              onClick={() => setPage('Курс валют')}
+            >
+              <span>ОФОРМИТЬ ЗАЯВКУ</span>
+              <span className="home-primary-arrow">↗</span>
+            </button>
           </section>
 
-          <section className="sections">
-            <h2>Наши разделы</h2>
-            <div className="grid">
-              {sections.map((item) => (
-                <button
-                  className="section-card"
-                  key={item.title}
-                  onClick={() => setPage(item.title)}
-                >
-                  <span className="card-icon">{item.icon}</span>
-                  <strong>{item.title}</strong>
-                  <small>{item.desc}</small>
-                  <span className="arrow">↗</span>
-                </button>
-              ))}
+          <section className="home-secondary-grid">
+            <div className="home-secondary-card">
+              <span className="home-card-icon">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M7.2 8.5h9.6c1.7 0 2.8 1.1 3.2 2.8l1 4.4c.4 1.8-1.5 3-3 1.9l-2.4-1.8H8.4L6 17.6c-1.5 1.1-3.4-.1-3-1.9l1-4.4c.4-1.7 1.5-2.8 3.2-2.8Z"/>
+    <path d="M8.2 10.8v4M6.2 12.8h4"/>
+    <circle cx="15.8" cy="11.8" r=".8"/>
+    <circle cx="18" cy="14" r=".8"/>
+  </svg>
+</span>
+              <strong>ДОНАТ В ИГРЫ</strong>
+              <small>Цифровые товары и пополнение</small>
+              <span className="home-card-arrow">↗</span>
             </div>
-
+            <div className="home-secondary-card">
+              <span className="home-card-icon">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M3.5 10h17v10h-17z"/>
+    <path d="M2.8 7h18.4v3H2.8zM12 7v13"/>
+    <path d="M12 7H8.6C5.2 7 5.5 3.5 8 3.5c2 0 3.3 2 4 3.5Z"/>
+    <path d="M12 7h3.4c3.4 0 3.1-3.5.6-3.5-2 0-3.3 2-4 3.5Z"/>
+  </svg>
+</span>
+              <strong>ПРЕДЛОЖЕНИЯ</strong>
+              <small>Специальные условия KRON</small>
+              <span className="home-card-arrow">↗</span>
+            </div>
+          </section>
+          <section className="home-utility">
             <div className="quick-actions">
               {orderId && (
                 <button
