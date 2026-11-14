@@ -130,6 +130,8 @@ const pubgRoyalPassProducts = [
 function App() {
   const isLocalPreview = ['localhost', '127.0.0.1'].includes(window.location.hostname);
   const [page, setPage] = useState('home');
+  const [donateCategory, setDonateCategory] = useState('games');
+  const [donateSearch, setDonateSearch] = useState('');
   const [selectedGame, setSelectedGame] = useState(null);
   const [selectedGameVersion, setSelectedGameVersion] = useState('Free Fire');
   const [expandedGameCategory, setExpandedGameCategory] = useState('');
@@ -512,7 +514,11 @@ function App() {
           </section>
 
           <section className="home-secondary-grid">
-            <div className="home-secondary-card" onClick={() => setPage('Донат в игры')} role="button" tabIndex={0}>
+            <div className="home-secondary-card" onClick={() => {
+              setDonateCategory('games');
+              setDonateSearch('');
+              setPage('Донат в игры');
+            }} role="button" tabIndex={0}>
               <span className="home-card-icon">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M7.2 8.5h9.6c1.7 0 2.8 1.1 3.2 2.8l1 4.4c.4 1.8-1.5 3-3 1.9l-2.4-1.8H8.4L6 17.6c-1.5 1.1-3.4-.1-3-1.9l1-4.4c.4-1.7 1.5-2.8 3.2-2.8Z"/>
@@ -600,9 +606,65 @@ function App() {
           <p className="eyebrow">РАЗДЕЛ KRON</p>
           <h1>{page === 'game-detail' ? selectedGame?.name : page}</h1>
 
+          {page === 'Донат в игры' && (
+            <section className="donate-hub">
+              <div className="donate-category-list">
+                <button
+                  type="button"
+                  className={`donate-category-button ${donateCategory === 'games' ? 'active' : ''}`}
+                  onClick={() => { setDonateCategory('games'); setDonateSearch(''); }}
+                >
+                  <span className="donate-category-orb"><span>🎮</span></span>
+                  <span className="donate-category-label">Донат в игры</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`donate-category-button ${donateCategory === 'subscriptions' ? 'active' : ''}`}
+                  onClick={() => { setDonateCategory('subscriptions'); setDonateSearch(''); }}
+                >
+                  <span className="donate-category-orb"><span>👑</span></span>
+                  <span className="donate-category-label">Подписки</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`donate-category-button ${donateCategory === 'telegram' ? 'active' : ''}`}
+                  onClick={() => { setDonateCategory('telegram'); setDonateSearch(''); }}
+                >
+                  <span className="donate-category-orb"><span>✈️</span></span>
+                  <span className="donate-category-label">Telegram</span>
+                </button>
+              </div>
+
+              <label className="donate-search">
+                <span aria-hidden="true">⌕</span>
+                <input
+                  type="search"
+                  value={donateSearch}
+                  onChange={(event) => setDonateSearch(event.target.value)}
+                  placeholder={
+                    donateCategory === 'games'
+                      ? 'Поиск игр...'
+                      : donateCategory === 'subscriptions'
+                        ? 'Поиск подписок...'
+                        : 'Поиск товаров Telegram...'
+                  }
+                  aria-label="Поиск по каталогу"
+                />
+                {donateSearch && (
+                  <button type="button" onClick={() => setDonateSearch('')} aria-label="Очистить поиск">×</button>
+                )}
+              </label>
+            </section>
+          )}
+
           {page === 'Донат в игры' ? (
+            donateCategory === 'games' ? (
             <div className="games-grid">
-              {games.map((game) => (
+              {games.filter((game) =>
+                game.name.toLowerCase().includes(donateSearch.trim().toLowerCase())
+              ).map((game) => (
                 <button
                   className="game-tile"
                   key={game.id}
@@ -622,6 +684,19 @@ function App() {
                 </button>
               ))}
             </div>
+            ) : (
+              <div className="donate-coming-soon">
+                <span className="donate-coming-soon-icon">
+                  {donateCategory === 'subscriptions' ? '👑' : '✈️'}
+                </span>
+                <h2>Скоро в KRON</h2>
+                <p>
+                  {donateCategory === 'subscriptions'
+                    ? 'Каталог интернет-подписок скоро появится здесь.'
+                    : 'Пополнение и цифровые товары Telegram скоро появятся здесь.'}
+                </p>
+              </div>
+            )
           ) : page === 'game-detail' ? (
             selectedGame ? (
               <div className="game-detail">
