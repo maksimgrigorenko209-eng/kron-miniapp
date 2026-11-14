@@ -1249,3 +1249,893 @@ textarea.payment-input {
 .home-secondary-card:nth-child(2) .home-card-icon svg {
   transform: rotate(7deg) scale(0.9);
 }
+
+
+/* KRON — каталог игровых товаров */
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px 10px;
+  margin-top: 22px;
+}
+.game-tile {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: center;
+  cursor: pointer;
+  font: inherit;
+}
+.game-tile-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 15px;
+  border: 1px solid rgba(157, 190, 171, .16);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, .18);
+}
+.game-tile-name {
+  font-size: 10px;
+  line-height: 1.25;
+  font-weight: 600;
+  color: #dce9e1;
+  overflow-wrap: anywhere;
+}
+.game-detail {
+  margin-top: 22px;
+}
+.game-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 22px;
+}
+.game-detail-image {
+  width: 76px;
+  height: 76px;
+  flex: 0 0 76px;
+  object-fit: cover;
+  border-radius: 18px;
+  border: 1px solid rgba(157, 190, 171, .18);
+}
+.game-detail-head h2 {
+  margin: 0 0 6px;
+  color: #edf6f0;
+  font-size: 19px;
+  line-height: 1.2;
+}
+.game-detail-head .subtitle {
+  margin: 0;
+}
+.game-version-list {
+  display: flex;
+  gap: 9px;
+  margin: 0 0 20px;
+}
+.game-version-button {
+  flex: 1;
+  padding: 11px 9px;
+  border: 1px solid rgba(157, 190, 171, .17);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .025);
+  color: #c8d8ce;
+  font-size: 12px;
+  font-weight: 600;
+}
+.game-version-button.active {
+  border-color: rgba(65, 205, 137, .55);
+  background: rgba(36, 150, 96, .13);
+  color: #75e0a8;
+}
+.game-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.game-category-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 16px;
+  border: 1px solid rgba(157, 190, 171, .13);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, .025);
+}
+.game-category-card strong {
+  color: #e4efe8;
+  font-size: 14px;
+}
+.game-category-card span {
+  color: #91a69a;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+
+/* KRON — мягкий объём и тактильные поверхности */
+
+.home-secondary-card,
+.game-tile,
+.game-category-card {
+  border: 1px solid rgba(151, 190, 169, .17);
+  background:
+    linear-gradient(145deg, rgba(34, 49, 40, .96), rgba(12, 20, 15, .98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .075),
+    inset 0 -1px 0 rgba(0, 0, 0, .38),
+    0 5px 0 rgba(3, 9, 6, .65),
+    0 9px 17px rgba(0, 0, 0, .22);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.home-secondary-card {
+  border-color: rgba(105, 173, 137, .22);
+}
+
+.game-tile {
+  padding: 7px 6px 10px;
+  border-radius: 17px;
+  gap: 9px;
+}
+
+.game-tile-image {
+  border-radius: 12px;
+  border-color: rgba(190, 220, 202, .2);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, .12),
+    0 3px 8px rgba(0, 0, 0, .35);
+}
+
+.game-tile-name {
+  padding: 0 2px;
+}
+
+.game-detail-image {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .14),
+    0 5px 12px rgba(0, 0, 0, .3);
+}
+
+.game-category-card {
+  border-radius: 16px;
+  border-color: rgba(105, 173, 137, .18);
+}
+
+.game-version-button,
+.back {
+  background: linear-gradient(145deg, #1b2920, #101812);
+  border: 1px solid rgba(145, 190, 162, .2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .08),
+    inset 0 -1px 0 rgba(0, 0, 0, .35),
+    0 3px 0 rgba(3, 9, 6, .7),
+    0 5px 10px rgba(0, 0, 0, .2);
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+}
+
+.game-version-button.active {
+  background: linear-gradient(145deg, #194b36, #103021);
+  border-color: rgba(91, 220, 157, .48);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .13),
+    0 3px 0 rgba(3, 22, 13, .75),
+    0 5px 12px rgba(0, 0, 0, .2);
+}
+
+.primary-button {
+  background: linear-gradient(180deg, #35e0a5 0%, #00c88c 48%, #00a875 100%);
+  border: 1px solid rgba(145, 255, 207, .45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .38),
+    inset 0 -2px 0 rgba(0, 91, 59, .28),
+    0 4px 0 #006b4b,
+    0 8px 17px rgba(0, 190, 130, .17);
+  transition: transform .16s ease, filter .16s ease, box-shadow .16s ease;
+}
+
+@media (hover: hover) {
+  .home-secondary-card:hover,
+  .game-tile:hover,
+  .game-category-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(94, 207, 151, .34);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .09),
+      0 7px 0 rgba(3, 9, 6, .65),
+      0 13px 22px rgba(0, 0, 0, .25);
+  }
+
+  .game-version-button:hover,
+  .back:hover {
+    filter: brightness(1.12);
+  }
+}
+
+.game-tile:active,
+.home-secondary-card:active,
+.game-version-button:active,
+.back:active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, .28),
+    0 1px 0 rgba(3, 9, 6, .7);
+}
+
+.primary-button:active {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 2px 5px rgba(0, 60, 39, .3),
+    0 1px 0 #006b4b;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-secondary-card,
+  .game-tile,
+  .game-category-card,
+  .game-version-button,
+  .back,
+  .primary-button {
+    transition: none;
+  }
+}
+
+/* KRON — раскрывающиеся категории игрового каталога */
+button.game-category-card {
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  align-items: stretch;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.game-category-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+}
+
+.game-category-card-heading strong {
+  color: #e4efe8;
+  font-size: 14px;
+}
+
+.game-category-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  flex: 0 0 25px;
+  border: 1px solid rgba(91, 220, 157, .25);
+  border-radius: 9px;
+  background: rgba(36, 150, 96, .12);
+  color: #75e0a8;
+  font-size: 19px;
+  line-height: 1;
+}
+
+.game-category-details {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-top: 12px;
+  margin-top: 5px;
+  border-top: 1px solid rgba(145, 190, 162, .13);
+}
+
+.game-category-details span {
+  color: #a9bdb0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.game-category-card.expanded {
+  border-color: rgba(91, 220, 157, .35);
+  background: linear-gradient(145deg, rgba(29, 55, 41, .98), rgba(12, 20, 15, .98));
+}
+
+
+/* KRON — каталог PUBG Mobile UC */
+.game-category-toggle {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.game-category-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pubg-uc-banner {
+  position: relative;
+  overflow: hidden;
+  border-radius: 13px;
+  border: 1px solid rgba(105, 220, 157, .2);
+  aspect-ratio: 16 / 7;
+  background: #101812;
+}
+
+.pubg-uc-banner img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pubg-uc-banner-caption {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 22px 13px 11px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, .88));
+}
+
+.pubg-uc-banner-caption strong {
+  color: #fff;
+  font-size: 16px;
+  letter-spacing: .7px;
+}
+
+.pubg-uc-banner-caption span {
+  color: #b8e8cc;
+  font-size: 11px;
+}
+
+.pubg-uc-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.pubg-uc-heading img {
+  width: 39px;
+  height: 39px;
+  object-fit: contain;
+}
+
+.pubg-uc-heading div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pubg-uc-heading strong {
+  color: #e4efe8;
+  font-size: 13px;
+}
+
+.pubg-uc-heading span {
+  color: #91a69a;
+  font-size: 11px;
+}
+
+.pubg-uc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.uc-product-card {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 13px 7px 11px;
+  border: 1px solid rgba(145, 190, 162, .17);
+  border-radius: 13px;
+  background: linear-gradient(145deg, #1b2920, #101812);
+  color: #e4efe8;
+  cursor: pointer;
+  font: inherit;
+  transition: border-color .16s ease, background .16s ease;
+}
+
+.uc-product-card.selected {
+  border-color: #45d99a;
+  background: linear-gradient(145deg, #194b36, #10251a);
+  box-shadow: inset 0 0 0 1px rgba(69, 217, 154, .15);
+}
+
+.uc-product-card:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+}
+
+.uc-product-card > img {
+  width: 39px;
+  height: 39px;
+  object-fit: contain;
+}
+
+.uc-product-card > strong {
+  font-size: 14px;
+}
+
+.uc-product-price {
+  color: #75e0a8;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.uc-product-labels {
+  display: flex;
+  min-height: 19px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+.uc-popular,
+.uc-in-stock,
+.uc-out-stock {
+  padding: 3px 6px;
+  border-radius: 6px;
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+.uc-popular {
+  background: rgba(237, 185, 75, .14);
+  color: #f0c66e;
+}
+
+.uc-in-stock {
+  background: rgba(58, 190, 119, .12);
+  color: #75dba0;
+}
+
+.uc-out-stock {
+  background: rgba(220, 90, 90, .12);
+  color: #e99b9b;
+}
+
+.uc-selected-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid rgba(91, 220, 157, .24);
+  border-radius: 12px;
+  background: rgba(36, 150, 96, .08);
+  color: #b8cabe;
+  font-size: 11px;
+}
+
+.uc-selected-info strong {
+  color: #75e0a8;
+}
+
+/* KRON — PREMIUM PUBG UC GAME STORE */
+
+.pubg-uc-banner {
+  isolation: isolate;
+  position: relative;
+  aspect-ratio: 16 / 7;
+  min-height: 150px;
+  border-radius: 17px;
+  border: 1px solid rgba(123, 231, 174, .38);
+  background:
+    radial-gradient(ellipse at 70% 35%, rgba(67, 190, 125, .2), transparent 48%),
+    linear-gradient(120deg, #17271e, #080e0b 75%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.16),
+    0 0 0 1px rgba(0,0,0,.5),
+    0 9px 24px rgba(0,0,0,.4),
+    0 0 25px rgba(36,190,115,.09);
+}
+
+.pubg-uc-banner::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(4,10,7,.12), transparent 48%, rgba(3,9,6,.2)),
+    linear-gradient(0deg, rgba(3,8,5,.82), transparent 58%),
+    radial-gradient(ellipse at 72% 35%, transparent 20%, rgba(0,0,0,.28) 100%);
+}
+
+.pubg-uc-banner::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 35%, rgba(143,255,194,.13) 50%, transparent 65%);
+  opacity: .7;
+}
+
+.pubg-uc-banner img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+  filter: saturate(1.12) contrast(1.08) brightness(.88);
+  transform: scale(1.025);
+}
+
+.pubg-uc-banner-caption {
+  z-index: 2;
+  padding: 34px 16px 14px;
+  background: linear-gradient(0deg, rgba(2,8,5,.96), rgba(2,8,5,.48) 65%, transparent);
+}
+
+.pubg-uc-banner-caption strong {
+  font-size: 19px;
+  letter-spacing: 1.5px;
+  text-shadow: 0 2px 12px rgba(0,0,0,.8);
+}
+
+.pubg-uc-banner-caption span {
+  color: #a6f2c5;
+  font-size: 12px;
+  letter-spacing: .35px;
+}
+
+.pubg-uc-heading {
+  padding: 9px 2px 5px;
+  gap: 12px;
+}
+
+.pubg-uc-heading img {
+  width: 47px;
+  height: 47px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.5));
+}
+
+.pubg-uc-heading strong {
+  font-size: 14px;
+  letter-spacing: .2px;
+}
+
+.pubg-uc-heading span {
+  color: #9ab5a4;
+  font-size: 11px;
+}
+
+.pubg-uc-grid {
+  gap: 11px;
+}
+
+.uc-product-card {
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 158px;
+  padding: 13px 8px 12px;
+  gap: 8px;
+  border: 1px solid rgba(133,174,148,.25);
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse at 50% -15%, rgba(108,180,132,.18), transparent 65%),
+    linear-gradient(145deg, #26372c 0%, #17241b 48%, #0d1510 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.13),
+    inset 0 -2px 0 rgba(0,0,0,.3),
+    0 4px 0 #080e0a,
+    0 8px 15px rgba(0,0,0,.3);
+  transition:
+    transform .22s cubic-bezier(.2,.8,.2,1),
+    border-color .22s ease,
+    box-shadow .22s ease,
+    filter .22s ease,
+    background .22s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.uc-product-card::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(125deg, rgba(255,255,255,.12), transparent 28%, transparent 70%, rgba(80,220,145,.08));
+  opacity: .75;
+}
+
+.uc-product-card::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -60%;
+  left: -90%;
+  width: 65%;
+  height: 220%;
+  transform: rotate(24deg);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.13), transparent);
+  transition: left .45s ease;
+  pointer-events: none;
+}
+
+.uc-product-card > img {
+  width: 47px;
+  height: 47px;
+  filter: drop-shadow(0 4px 5px rgba(0,0,0,.5));
+  transition: transform .22s ease, filter .22s ease;
+}
+
+.uc-product-card > strong {
+  color: #f1f8f3;
+  font-size: 14px;
+  letter-spacing: .15px;
+  text-shadow: 0 2px 7px rgba(0,0,0,.55);
+}
+
+.uc-product-price {
+  color: #83f0b1;
+  font-size: 17px;
+  font-weight: 800;
+  text-shadow: 0 0 13px rgba(73,230,147,.22);
+}
+
+.uc-product-labels {
+  gap: 5px;
+}
+
+.uc-popular,
+.uc-in-stock,
+.uc-out-stock {
+  padding: 4px 7px;
+  border-radius: 7px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .1px;
+  border: 1px solid transparent;
+}
+
+.uc-popular {
+  color: #ffe09a;
+  border-color: rgba(255,203,105,.24);
+  background: linear-gradient(135deg, rgba(163,111,35,.35), rgba(102,68,20,.24));
+  box-shadow: 0 0 10px rgba(238,181,70,.08);
+}
+
+.uc-in-stock {
+  color: #8bf0b4;
+  border-color: rgba(91,220,157,.18);
+  background: rgba(36,150,96,.16);
+}
+
+.uc-out-stock {
+  color: #e6a3a3;
+  border-color: rgba(220,110,110,.18);
+  background: rgba(150,45,45,.18);
+}
+
+.uc-product-card.selected {
+  border-color: #62f0a7;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(71,226,145,.27), transparent 70%),
+    linear-gradient(145deg, #20583b, #10291b 75%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.2),
+    inset 0 0 0 1px rgba(104,255,174,.2),
+    0 0 0 1px rgba(76,230,151,.18),
+    0 0 21px rgba(48,220,132,.2),
+    0 5px 0 #07150d,
+    0 10px 20px rgba(0,0,0,.35);
+}
+
+.uc-product-card.selected > img {
+  transform: translateY(-2px) scale(1.08);
+  filter: drop-shadow(0 0 9px rgba(108,255,174,.4));
+}
+
+.uc-product-card.selected .uc-product-price {
+  color: #a5ffc8;
+}
+
+.uc-product-card.unavailable {
+  filter: saturate(.55);
+  background: linear-gradient(145deg, #252a26, #141815);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 3px 0 #080b09;
+}
+
+.uc-selected-info {
+  padding: 14px;
+  border: 1px solid rgba(91,220,157,.35);
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(51,194,119,.15), transparent 65%),
+    linear-gradient(135deg, rgba(24,67,43,.8), rgba(10,22,15,.95));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 6px 16px rgba(0,0,0,.2);
+  font-size: 12px;
+}
+
+.uc-selected-info strong {
+  color: #91f5b8;
+  font-size: 13px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .uc-product-card:not(:disabled):hover {
+    transform: translateY(-5px) scale(1.018);
+    border-color: rgba(112,245,169,.75);
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(73,220,137,.24), transparent 70%),
+      linear-gradient(145deg, #304b38, #14251a 75%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.2),
+      0 0 0 1px rgba(92,230,151,.13),
+      0 0 22px rgba(58,218,132,.19),
+      0 8px 0 #080e0a,
+      0 15px 24px rgba(0,0,0,.4);
+    filter: brightness(1.12);
+  }
+
+  .uc-product-card:not(:disabled):hover::after {
+    left: 130%;
+  }
+
+  .uc-product-card:not(:disabled):hover > img {
+    transform: translateY(-3px) scale(1.1);
+    filter: drop-shadow(0 0 9px rgba(108,255,174,.35));
+  }
+
+  .uc-product-card:not(:disabled):active {
+    transform: translateY(2px) scale(.985);
+    box-shadow: inset 0 3px 8px rgba(0,0,0,.35), 0 1px 0 #080e0a;
+  }
+}
+
+.uc-product-card:focus-visible {
+  outline: 2px solid #75e9a8;
+  outline-offset: 3px;
+}
+
+@media (max-width: 380px) {
+  .pubg-uc-grid {
+    gap: 8px;
+  }
+
+  .uc-product-card {
+    min-height: 150px;
+    padding: 11px 5px;
+  }
+
+  .uc-product-card > strong {
+    font-size: 12px;
+  }
+
+  .uc-product-price {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uc-product-card,
+  .uc-product-card::after,
+  .uc-product-card > img {
+    transition: none;
+  }
+}
+
+
+/* KRON — PUBG MOBILE ROYAL PASS */
+.royal-pass-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.royal-pass-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  min-height: 116px;
+  padding: 17px;
+  overflow: hidden;
+  border: 1px solid rgba(133, 174, 148, .27);
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(65, 190, 119, .17), transparent 62%),
+    linear-gradient(145deg, #26372c, #17241b 52%, #0d1510);
+  color: #eaf5ed;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    0 4px 0 #080e0a,
+    0 8px 15px rgba(0,0,0,.28);
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.royal-pass-type {
+  color: #a9c5b3;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.royal-pass-card > strong {
+  color: #f1f8f3;
+  font-size: 16px;
+  letter-spacing: .1px;
+}
+
+.royal-pass-price {
+  color: #83f0b1;
+  font-size: 21px;
+  font-weight: 800;
+  text-shadow: 0 0 13px rgba(73,230,147,.2);
+}
+
+.royal-pass-action {
+  position: absolute;
+  right: 15px;
+  bottom: 17px;
+  padding: 6px 11px;
+  border: 1px solid rgba(91,220,157,.25);
+  border-radius: 9px;
+  background: rgba(36,150,96,.15);
+  color: #91f5b8;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.royal-pass-card.selected {
+  border-color: #62f0a7;
+  background:
+    radial-gradient(ellipse at 90% 0%, rgba(71,226,145,.27), transparent 70%),
+    linear-gradient(145deg, #20583b, #10291b 75%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.2),
+    0 0 0 1px rgba(76,230,151,.18),
+    0 0 20px rgba(48,220,132,.17),
+    0 4px 0 #07150d;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .royal-pass-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(112,245,169,.7);
+  }
+}
+
+.royal-pass-card:active {
+  transform: translateY(2px);
+}
+
+.royal-pass-card:focus-visible {
+  outline: 2px solid #75e9a8;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .royal-pass-card {
+    transition: none;
+  }
+}

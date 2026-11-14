@@ -77,9 +77,66 @@ const banksByCountry = {
   KZ: ['Kaspi Bank', 'Halyk Bank', 'ForteBank', 'Freedom Bank'],
 };
 
+const games = [
+  { id: 'pubg-mobile', name: 'PUBG Mobile', icon: '/games/pubg-mobile.jpg' },
+  { id: 'free-fire', name: 'Free Fire', subtitle: 'Free Fire / MAX', icon: '/games/free-fire.jpg', versions: [{ name: 'Free Fire', icon: '/games/free-fire.jpg' }, { name: 'Free Fire MAX', icon: '/games/free-fire-max.jpg' }] },
+  { id: 'mobile-legends', name: 'Mobile Legends', icon: '/games/mobile-legends.jpg' },
+  { id: 'roblox', name: 'Roblox', icon: '/games/roblox.jpg' },
+  { id: 'standoff-2', name: 'Standoff 2', icon: '/games/standoff-2.jpg' },
+  { id: 'brawl-stars', name: 'Brawl Stars', icon: '/games/brawl-stars.jpg' },
+  { id: 'call-of-duty-mobile', name: 'Call of Duty: Mobile', icon: '/games/call-of-duty-mobile.jpg' },
+  { id: 'genshin-impact', name: 'Genshin Impact', icon: '/games/genshin-impact.jpg' },
+  { id: 'clash-of-clans', name: 'Clash of Clans', icon: '/games/clash-of-clans.jpg' },
+  { id: 'ea-sports-fc-mobile', name: 'EA SPORTS FC Mobile', icon: '/games/ea-sports-fc-mobile.jpg' },
+  { id: 'honkai-star-rail', name: 'Honkai: Star Rail', icon: '/games/honkai-star-rail.jpg' },
+  { id: 'arena-breakout', name: 'Arena Breakout', icon: '/games/arena-breakout.jpg' },
+];
+
+
+const pubgUcProducts = [
+  { uc: 60, price: 0.97 },
+  { uc: 120, price: 1.95 },
+  { uc: 180, price: 2.98 },
+  { uc: 325, price: 4.86 },
+  { uc: 385, price: 5.82 },
+  { uc: 660, price: 10.99 },
+  { uc: 720, price: 10.68 },
+  { uc: 985, price: 14.55 },
+  { uc: 1320, price: 19.40, popular: true },
+  { uc: 1800, price: 26.99 },
+  { uc: 2125, price: 28.99 },
+  { uc: 2460, price: 30.99 },
+  { uc: 3850, price: 54.99 },
+  { uc: 4510, price: 58.22, available: false },
+  { uc: 5650, price: 69.99 },
+  { uc: 8100, price: 104.99 },
+  { uc: 9900, price: 119.99, popular: true },
+  { uc: 11950, price: 135.50 },
+  { uc: 16200, price: 180.96 },
+  { uc: 24300, price: 199.99 },
+  { uc: 32400, price: 399.99, available: false },
+  { uc: 40500, price: 449.99 },
+  { uc: 48600, price: 519.99 },
+  { uc: 81000, price: 899.99, available: false },
+ ];
+
+const pubgRoyalPassProducts = [
+  { id: 'rp-1-50', name: 'Обычный Royal Pass', levels: 'Уровни 1–50', price: '5.55' },
+  { id: 'rp-1-100', name: 'Обычный Royal Pass', levels: 'Уровни 1–100', price: '10.68' },
+  { id: 'rp-upgraded-1-100', name: 'Улучшенный Royal Pass', levels: 'Уровни 1–100', price: '28.00' },
+];
+
 function App() {
   const isLocalPreview = ['localhost', '127.0.0.1'].includes(window.location.hostname);
   const [page, setPage] = useState('home');
+  const [selectedGame, setSelectedGame] = useState(null);
+  const [selectedGameVersion, setSelectedGameVersion] = useState('Free Fire');
+  const [expandedGameCategory, setExpandedGameCategory] = useState('');
+  const [selectedGameProduct, setSelectedGameProduct] = useState(null);
+  const [gamePlayerId, setGamePlayerId] = useState('');
+  const [gamePayment, setGamePayment] = useState(null);
+  const [paymentSource, setPaymentSource] = useState('exchange');
+
   const [selectedCurrency, setSelectedCurrency] = useState('USDT');
   const [selectedNetwork, setSelectedNetwork] = useState('TRC20');
   const [amount, setAmount] = useState('');
@@ -131,6 +188,10 @@ function App() {
 
   const commissionAmount = numericAmount * commission / 100;
   const totalAmount = numericAmount + commissionAmount;
+
+  const paymentAmount = paymentSource === 'game'
+    ? Number(gamePayment?.cryptoAmount ?? gamePayment?.priceUSD ?? 0)
+    : totalAmount;
 
   const formatNumber = (value) =>
     new Intl.NumberFormat('ru-RU', {
@@ -237,6 +298,58 @@ function App() {
   useEffect(() => {
     loadAdminOrders();
   }, []);
+
+  const handleCreateGameOrder = async () => {
+    if (!selectedGameProduct || !gamePlayerId.trim()) {
+      setOrderError('Введите игровой ID.');
+      return;
+    }
+
+    const category = expandedGameCategory;
+    const productId = category === 'Игровая валюта'
+      ? `uc-${selectedGameProduct}`
+      : selectedGameProduct;
+
+    setOrderLoading(true);
+    setOrderError('');
+
+    try {
+      const result = isLocalPreview
+        ? (() => {
+            const product = category === 'Игровая валюта'
+              ? pubgUcProducts.find((item) => item.uc === selectedGameProduct)
+              : pubgRoyalPassProducts.find((item) => item.id === selectedGameProduct);
+            const priceUSD = category === 'Игровая валюта' ? product.price : Number(product.price);
+            return {
+              orderId: `KR-TEST-${Date.now()}`,
+              priceUSD,
+              crypto: selectedCurrency,
+              network: selectedNetwork,
+              cryptoAmount: priceUSD,
+              walletAddress: addressesByCrypto[selectedCurrency]?.[selectedNetwork],
+              marketRate: 1,
+            };
+          })()
+        : await sendOrderAction('create_game_order', {
+            productId,
+            category,
+            playerId: gamePlayerId.trim(),
+            crypto: selectedCurrency,
+            network: selectedNetwork,
+          });
+
+      setOrderId(result.orderId);
+      localStorage.setItem('kronOrderId', result.orderId);
+      setOrderStatus('awaiting_payment');
+      setPaymentSource('game');
+      setGamePayment(result);
+      setPage('Криптооплата');
+    } catch (error) {
+      setOrderError(error.message || 'Не удалось создать игровую заявку.');
+    } finally {
+      setOrderLoading(false);
+    }
+  };
 
   const handleCreateOrder = async () => {
     if (isLocalPreview) {
@@ -379,7 +492,7 @@ function App() {
           </section>
 
           <section className="home-secondary-grid">
-            <div className="home-secondary-card">
+            <div className="home-secondary-card" onClick={() => setPage('Донат в игры')} role="button" tabIndex={0}>
               <span className="home-card-icon">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M7.2 8.5h9.6c1.7 0 2.8 1.1 3.2 2.8l1 4.4c.4 1.8-1.5 3-3 1.9l-2.4-1.8H8.4L6 17.6c-1.5 1.1-3.4-.1-3-1.9l1-4.4c.4-1.7 1.5-2.8 3.2-2.8Z"/>
@@ -454,6 +567,8 @@ function App() {
           <button
             className="back"
             onClick={() => setPage(
+              page === 'game-detail' ? 'Донат в игры' :
+              page === 'Донат в игры' ? 'home' :
               page === 'Статус' || page === 'Админ-панель' ? 'home' :
               page === 'Криптооплата' ? 'Оплата' :
               page === 'Оплата' ? 'Курс валют' : 'home'
@@ -463,9 +578,195 @@ function App() {
           </button>
 
           <p className="eyebrow">РАЗДЕЛ KRON</p>
-          <h1>{page}</h1>
+          <h1>{page === 'game-detail' ? selectedGame?.name : page}</h1>
 
-          {page === 'Курс валют' ? (
+          {page === 'Донат в игры' ? (
+            <div className="games-grid">
+              {games.map((game) => (
+                <button
+                  className="game-tile"
+                  key={game.id}
+                  onClick={() => {
+                    setSelectedGame(game);
+                    setSelectedGameVersion(game.versions?.[0]?.name || '');
+                    setExpandedGameCategory('');
+                    setSelectedGameProduct(null);
+                    setPage('game-detail');
+                  }}
+                >
+                  <img className="game-tile-image" src={game.icon} alt={game.name} />
+                  <span className="game-tile-name">{game.name}</span>
+                </button>
+              ))}
+            </div>
+          ) : page === 'game-detail' ? (
+            selectedGame ? (
+              <div className="game-detail">
+                <div className="game-detail-head">
+                  <img
+                    className="game-detail-image"
+                    src={selectedGame.versions?.find((version) => version.name === selectedGameVersion)?.icon || selectedGame.icon}
+                    alt={selectedGame.name}
+                  />
+                  <div>
+                    <h2>{selectedGame.name}</h2>
+                    <p className="subtitle">Выберите нужную категорию</p>
+                  </div>
+                </div>
+                {selectedGame.versions?.length > 1 && (
+                  <div className="game-version-list">
+                    {selectedGame.versions.map((version) => (
+                      <button
+                        key={version.name}
+                        className={`game-version-button ${selectedGameVersion === version.name ? 'active' : ''}`}
+                        onClick={() => setSelectedGameVersion(version.name)}
+                      >
+                        {version.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="game-category-list">
+                  {['Игровая валюта', 'Пропуски', 'Наборы и предложения'].map((category) => {
+                    const isExpanded = expandedGameCategory === category;
+                    const isPubgUc = selectedGame.id === 'pubg-mobile' && category === 'Игровая валюта';
+                    const isPubgPass = selectedGame.id === 'pubg-mobile' && category === 'Пропуски';
+
+                    return (
+                      <div className={`game-category-card ${isExpanded ? 'expanded' : ''}`} key={category}>
+                        <button
+                          type="button"
+                          className="game-category-toggle"
+                          aria-expanded={isExpanded}
+                          onClick={() => {
+                            setExpandedGameCategory(isExpanded ? '' : category);
+                            setSelectedGameProduct(null);
+                          }}
+                        >
+                          <span className="game-category-card-heading">
+                            <strong>{category}</strong>
+                            <span className="game-category-arrow">{isExpanded ? '−' : '+'}</span>
+                          </span>
+                        </button>
+
+                        {isExpanded && (
+                          <div className="game-category-details">
+                            {isPubgPass ? (
+                              <>
+                                <div className="pubg-uc-heading">
+                                  <div>
+                                    <strong>Выберите Royal Pass</strong>
+                                    <span>Стоимость указана в USD</span>
+                                  </div>
+                                </div>
+
+                                <div className="royal-pass-list">
+                                  {pubgRoyalPassProducts.map((product) => (
+                                    <button
+                                      type="button"
+                                      key={product.id}
+                                      className={`royal-pass-card ${selectedGameProduct === product.id ? 'selected' : ''}`}
+                                      onClick={() => setSelectedGameProduct(product.id)}
+                                    >
+                                      <span className="royal-pass-type">{product.name}</span>
+                                      <strong>{product.levels}</strong>
+                                      <span className="royal-pass-price">${product.price}</span>
+                                      <span className="royal-pass-action">
+                                        {selectedGameProduct === product.id ? 'Выбрано' : 'Выбрать'}
+                                      </span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </>
+                            ) : isPubgUc ? (
+                              <>
+                                <div className="pubg-uc-banner">
+                                  <img src="/games/kron-pubg-uc-banner.jpg" alt="PUBG Mobile UC" />
+                                  <div className="pubg-uc-banner-caption">
+                                    <strong>PUBG MOBILE</strong>
+                                    <span>Пополнение UC</span>
+                                  </div>
+                                </div>
+
+                                <div className="pubg-uc-heading">
+                                  <img src="/games/kron-uc-token-art.png" alt="" />
+                                  <div>
+                                    <strong>Выберите количество UC</strong>
+                                    <span>Стоимость указана в USD</span>
+                                  </div>
+                                </div>
+
+                                <div className="pubg-uc-grid">
+                                  {pubgUcProducts.map((product) => (
+                                    <button
+                                      type="button"
+                                      key={product.uc}
+                                      className={`uc-product-card ${selectedGameProduct === product.uc ? 'selected' : ''} ${product.available === false ? 'unavailable' : ''}`}
+                                      disabled={product.available === false}
+                                      onClick={() => setSelectedGameProduct(product.uc)}
+                                    >
+                                      <img src="/games/kron-uc-token-art.png" alt="" />
+                                      <strong>{product.uc.toLocaleString('en-US')} UC</strong>
+                                      <span className="uc-product-price">${product.price.toFixed(2)}</span>
+                                      <span className="uc-product-labels">
+                                        {product.popular && <span className="uc-popular">Популярно</span>}
+                                        <span className={product.available === false ? 'uc-out-stock' : 'uc-in-stock'}>
+                                          {product.available === false ? 'Нет в наличии' : 'В наличии'}
+                                        </span>
+                                      </span>
+                                    </button>
+                                  ))}
+                                </div>
+
+                                {selectedGameProduct && (
+                                  <div className="uc-selected-info">
+                                    <span>Выбрано: <strong>{selectedGameProduct.toLocaleString('en-US')} UC</strong></span>
+                                    <span>Далее добавим ввод игрового ID и оформление заявки.</span>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <span>Стоимость уточняется менеджером KRON</span>
+                                <span>Валюта: USD ($)</span>
+                                <span>Каталог этой категории добавим отдельно</span>
+                              </>
+                            )}
+                            {(isPubgUc || isPubgPass) && selectedGameProduct && (
+                              <div className="uc-selected-info game-checkout">
+                                <label className="field-label" htmlFor="pubg-player-id">
+                                  PUBG Mobile Player ID
+                                </label>
+                                <input
+                                  id="pubg-player-id"
+                                  type="text"
+                                  inputMode="numeric"
+                                  placeholder="Введите игровой ID"
+                                  value={gamePlayerId}
+                                  onChange={(event) => setGamePlayerId(event.target.value)}
+                                />
+                                <button
+                                  type="button"
+                                  className="primary-button"
+                                  disabled={orderLoading || !gamePlayerId.trim()}
+                                  onClick={handleCreateGameOrder}
+                                >
+                                  {orderLoading ? 'Создаём заявку...' : 'Перейти к оплате'}
+                                </button>
+                                {orderError && <p className="calculator-note">{orderError}</p>}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <p className="subtitle">Выберите игру в каталоге.</p>
+            )
+          ) : page === 'Курс валют' ? (
             <div className="currency-page">
               <div className="currency-list">
                 {currencies.map((currency) => (
@@ -728,7 +1029,7 @@ function App() {
             <div className="payment-page">
               <p className="field-label">Сумма к оплате</p>
               <div className="payment-summary">
-                <strong>{formatNumber(totalAmount)} {selectedCurrency}</strong>
+                <strong>{formatNumber(paymentAmount)} {selectedCurrency}</strong>
                 <span>{selectedNetwork}</span>
               </div>
 
@@ -774,7 +1075,7 @@ function App() {
                       className="wallet-button"
                       onClick={() => {
                         const address = addressesByCrypto[selectedCurrency][selectedNetwork];
-                        const amountText = Number(totalAmount).toFixed(8).replace(/\.?0+$/, '');
+                        const amountText = Number(paymentAmount).toFixed(8).replace(/\.?0+$/, '');
 
                         const trustAssets = {
                           'USDT:TRC20': 'c195_tTR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
@@ -828,7 +1129,7 @@ function App() {
                           const asset = evmAssets[selection];
 
                           if (asset) {
-                            const fixedAmount = Number(totalAmount).toFixed(8);
+                            const fixedAmount = Number(paymentAmount).toFixed(8);
                             const [whole, fraction = ''] = fixedAmount.split('.');
                             const padded = (fraction + '0'.repeat(asset.decimals + 1))
                               .slice(0, asset.decimals + 1);
