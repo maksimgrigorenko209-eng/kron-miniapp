@@ -756,19 +756,42 @@ function App() {
                               </div>
                             )}
                             {chosenProduct && (
-                              <div className="uc-selected-info game-checkout">
-                                {accountFields.length ? accountFields.map((field) => (
-                                  <label className="field-label" htmlFor={`game-account-${selectedGame.id}-${field.key}`} key={field.key}>
-                                    {field.label}
-                                    <input
-                                      id={`game-account-${selectedGame.id}-${field.key}`}
-                                      type="text"
-                                      placeholder={field.placeholder || `Введите ${field.label}`}
-                                      value={gameAccountData[field.key] || ''}
-                                      onChange={(event) => setGameAccountData((current) => ({ ...current, [field.key]: event.target.value }))}
-                                    />
-                                  </label>
-                                )) : <p>{selectedGameCatalog.fulfillmentNote || 'После оформления менеджер KRON уточнит необходимые данные.'}</p>}
+                              <section className="game-checkout">
+                                <div className="game-checkout-heading">
+                                  <span className="game-checkout-step">СЛЕДУЮЩИЙ ШАГ</span>
+                                  <h3>Данные игрового аккаунта</h3>
+                                  <p>Укажите данные аккаунта, на который нужно зачислить выбранный товар</p>
+                                </div>
+                                <div className="game-checkout-product">
+                                  <span>Ваш выбор</span>
+                                  <strong>{chosenProduct.name}</strong>
+                                  <b>${Number(chosenProduct.price).toFixed(2)}</b>
+                                </div>
+                                {accountFields.length ? (
+                                  <div className="game-account-fields">
+                                    {accountFields.map((field) => (
+                                      <label className="field-label" htmlFor={`game-account-${selectedGame.id}-${field.key}`} key={field.key}>
+                                        {field.label}{field.required ? ' *' : ''}
+                                        <input
+                                          id={`game-account-${selectedGame.id}-${field.key}`}
+                                          type="text"
+                                          autoComplete="off"
+                                          placeholder={field.placeholder || `Введите ${field.label}`}
+                                          value={gameAccountData[field.key] || ''}
+                                          onChange={(event) => {
+                                            setGameAccountData((current) => ({ ...current, [field.key]: event.target.value }));
+                                            setOrderError('');
+                                          }}
+                                        />
+                                      </label>
+                                    ))}
+                                    <p className="game-checkout-hint">Проверьте правильность данных перед оплатой.</p>
+                                  </div>
+                                ) : (
+                                  <p className="game-checkout-hint">
+                                    {selectedGameCatalog.fulfillmentNote || 'После оформления менеджер KRON уточнит необходимые данные.'}
+                                  </p>
+                                )}
                                 <button
                                   type="button"
                                   className="primary-button"
@@ -778,7 +801,7 @@ function App() {
                                   {orderLoading ? 'Создаём заявку...' : 'Перейти к оплате'}
                                 </button>
                                 {orderError && <p className="calculator-note">{orderError}</p>}
-                              </div>
+                              </section>
                             )}
                           </div>
                         )}

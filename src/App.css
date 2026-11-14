@@ -2385,3 +2385,110 @@ button.game-category-card {
     border-radius: 14px;
   }
 }
+
+/* KRON — отдельный этап ввода данных игрового аккаунта */
+.game-checkout {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px solid rgba(70, 224, 145, .38);
+  border-radius: 17px;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(37, 173, 103, .16), transparent 58%),
+    linear-gradient(145deg, rgba(17, 39, 26, .98), rgba(8, 16, 11, .98));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 8px 22px rgba(0,0,0,.2);
+}
+
+.game-checkout-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.game-checkout-step {
+  color: #79e9a8;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+}
+
+.game-checkout-heading h3 {
+  margin: 0;
+  color: #f0fff5;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.game-checkout-heading p,
+.game-checkout-hint {
+  margin: 0;
+  color: #a8b9ae;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.game-checkout-product {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  padding: 12px;
+  border: 1px solid rgba(126, 218, 164, .16);
+  border-radius: 12px;
+  background: rgba(3, 10, 6, .42);
+}
+
+.game-checkout-product span {
+  grid-column: 1 / -1;
+  color: #8fa397;
+  font-size: 10px;
+}
+
+.game-checkout-product strong {
+  color: #e9f8ee;
+  font-size: 12px;
+}
+
+.game-checkout-product b {
+  color: #83efad;
+  font-size: 13px;
+}
+
+.game-account-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.game-checkout .field-label {
+  margin: 7px 0;
+  color: #d5e5da;
+  font-size: 11px;
+}
+
+.game-checkout .field-label input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 46px;
+  margin-top: 8px;
+  padding: 0 13px;
+  border: 1px solid rgba(151, 190, 165, .22);
+  border-radius: 11px;
+  outline: none;
+  background: #080f0b;
+  color: #f0fff5;
+  font: inherit;
+  font-size: 13px;
+}
+
+.game-checkout .field-label input:focus {
+  border-color: rgba(77, 231, 147, .75);
+  box-shadow: 0 0 0 3px rgba(77, 231, 147, .09);
+}
+
+.game-checkout .primary-button:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+}
