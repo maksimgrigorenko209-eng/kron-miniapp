@@ -614,7 +614,14 @@ function App() {
                   className={`donate-category-button ${donateCategory === 'games' ? 'active' : ''}`}
                   onClick={() => { setDonateCategory('games'); setDonateSearch(''); }}
                 >
-                  <span className="donate-category-orb"><span>🎮</span></span>
+                  <span className="donate-category-orb">
+                    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                      <path d="M13 15h22c4 0 6.5 2.4 7.5 6.5l2 10c.8 4-3.3 6.8-6.6 4.4l-6.1-4.4H16.2l-6.1 4.4c-3.3 2.4-7.4-.4-6.6-4.4l2-10C6.5 17.4 9 15 13 15Z" fill="rgba(91,224,157,.10)" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                      <path d="M15 21v10M10 26h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      <circle cx="31" cy="23" r="2" fill="currentColor"/>
+                      <circle cx="36" cy="28" r="2" fill="currentColor"/>
+                    </svg>
+                  </span>
                   <span className="donate-category-label">Донат в игры</span>
                 </button>
 
@@ -623,7 +630,15 @@ function App() {
                   className={`donate-category-button ${donateCategory === 'subscriptions' ? 'active' : ''}`}
                   onClick={() => { setDonateCategory('subscriptions'); setDonateSearch(''); }}
                 >
-                  <span className="donate-category-orb"><span>👑</span></span>
+                  <span className="donate-category-orb">
+                    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                      <path d="m7 15 10 8 7-13 7 13 10-8-4 21H11L7 15Z" fill="rgba(91,224,157,.12)" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                      <path d="M11 32h26M13 39h22" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                      <circle cx="7" cy="13" r="2.3" fill="currentColor"/>
+                      <circle cx="24" cy="8" r="2.3" fill="currentColor"/>
+                      <circle cx="41" cy="13" r="2.3" fill="currentColor"/>
+                    </svg>
+                  </span>
                   <span className="donate-category-label">Подписки</span>
                 </button>
 
@@ -632,7 +647,12 @@ function App() {
                   className={`donate-category-button ${donateCategory === 'telegram' ? 'active' : ''}`}
                   onClick={() => { setDonateCategory('telegram'); setDonateSearch(''); }}
                 >
-                  <span className="donate-category-orb"><span>✈️</span></span>
+                  <span className="donate-category-orb">
+                    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                      <path d="M5 22.5 43 7 32 41l-9-12.5-7 5 1.5-9L35 13 13 23.5 5 22.5Z" fill="rgba(91,224,157,.12)" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                      <path d="m16.5 24.5 7 4L35 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </span>
                   <span className="donate-category-label">Telegram</span>
                 </button>
               </div>
@@ -687,7 +707,20 @@ function App() {
             ) : (
               <div className="donate-coming-soon">
                 <span className="donate-coming-soon-icon">
-                  {donateCategory === 'subscriptions' ? '👑' : '✈️'}
+                  {donateCategory === 'subscriptions' ? (
+                    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                      <path d="m7 15 10 8 7-13 7 13 10-8-4 21H11L7 15Z" fill="rgba(91,224,157,.12)" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                      <path d="M11 32h26M13 39h22" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                      <circle cx="7" cy="13" r="2.3" fill="currentColor"/>
+                      <circle cx="24" cy="8" r="2.3" fill="currentColor"/>
+                      <circle cx="41" cy="13" r="2.3" fill="currentColor"/>
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                      <path d="M5 22.5 43 7 32 41l-9-12.5-7 5 1.5-9L35 13 13 23.5 5 22.5Z" fill="rgba(91,224,157,.12)" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                      <path d="m16.5 24.5 7 4L35 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
                 </span>
                 <h2>Скоро в KRON</h2>
                 <p>

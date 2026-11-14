@@ -2694,3 +2694,39 @@ button.game-category-card {
     transition: none;
   }
 }
+
+
+/* KRON SVG CATEGORY ICONS */
+.donate-category-orb svg {
+  position: relative;
+  z-index: 1;
+  width: 43%;
+  height: 43%;
+  overflow: visible;
+  color: #8aebba;
+  stroke: currentColor;
+  filter:
+    drop-shadow(0 2px 3px rgba(0, 0, 0, .48))
+    drop-shadow(0 0 7px rgba(0, 220, 145, .25));
+  transition: transform .2s ease, filter .2s ease;
+}
+
+.donate-category-button.active .donate-category-orb svg {
+  color: #b0ffd0;
+  filter:
+    drop-shadow(0 2px 3px rgba(0, 0, 0, .42))
+    drop-shadow(0 0 10px rgba(0, 235, 155, .42));
+}
+
+.donate-coming-soon-icon svg {
+  width: 42px;
+  height: 42px;
+  color: #8aebba;
+  filter: drop-shadow(0 0 9px rgba(0, 220, 145, .25));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .donate-category-orb svg {
+    transition: none;
+  }
+}
