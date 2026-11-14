@@ -2139,3 +2139,249 @@ button.game-category-card {
     transition: none;
   }
 }
+
+
+/* KRON — BRAWL STARS DISCOUNT */
+.brawl-discount {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  margin-top: 5px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 73, 91, .8);
+  border-radius: 7px;
+  background: linear-gradient(110deg, rgba(112, 8, 24, .94), rgba(190, 19, 43, .88), rgba(91, 7, 24, .96));
+  color: #fff2f3;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-shadow: 0 0 7px rgba(255, 255, 255, .65), 0 0 13px rgba(255, 42, 66, .9);
+  box-shadow: 0 0 8px rgba(255, 35, 58, .55), 0 0 19px rgba(255, 25, 52, .3), inset 0 0 8px rgba(255, 180, 190, .13);
+  animation: kronBrawlDiscountGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes kronBrawlDiscountGlow {
+  from {
+    box-shadow: 0 0 6px rgba(255, 35, 58, .42), 0 0 12px rgba(255, 25, 52, .2);
+  }
+  to {
+    box-shadow: 0 0 11px rgba(255, 35, 58, .8), 0 0 24px rgba(255, 25, 52, .45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brawl-discount { animation: none; }
+}
+
+
+/* KRON — игровые баннеры и значки валют */
+.game-detail > .game-detail-head {
+  display: none;
+}
+
+.game-hero-banner {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  margin-bottom: 20px;
+  border: 1px solid rgba(105, 220, 157, .24);
+  border-radius: 18px;
+  background: #101812;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .28);
+}
+
+.game-hero-banner::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 25% 0 0;
+  background: linear-gradient(transparent, rgba(3, 9, 6, .9));
+  pointer-events: none;
+}
+
+.game-hero-banner img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+}
+
+.game-hero-caption {
+  position: absolute;
+  z-index: 2;
+  right: 15px;
+  bottom: 13px;
+  left: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.game-hero-caption strong {
+  color: #fff;
+  font-size: 19px;
+  font-weight: 800;
+  text-shadow: 0 2px 10px #000;
+}
+
+.game-hero-caption span {
+  color: #b8e8cc;
+  font-size: 11px;
+}
+
+.game-currency-mark {
+  display: grid;
+  place-items: center;
+  width: 49px;
+  height: 49px;
+  flex: 0 0 49px;
+  border: 1px solid rgba(126, 235, 174, .4);
+  border-radius: 15px;
+  background:
+    radial-gradient(circle at 35% 25%, rgba(135, 255, 187, .25), transparent 65%),
+    linear-gradient(145deg, #244b35, #101c14);
+  color: #a4f5c1;
+  font-size: 25px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 0 12px rgba(100, 255, 166, .35);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.13), 0 4px 12px rgba(0,0,0,.25);
+}
+
+.mark-call-of-duty-mobile,
+.mark-ea-sports-fc-mobile {
+  font-size: 17px;
+  letter-spacing: -1px;
+}
+
+.mark-standoff-2,
+.mark-arena-breakout {
+  font-size: 23px;
+  font-style: italic;
+}
+
+
+
+/* KRON — обновлённая визуальная подача игровых страниц */
+.game-hero-banner {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  height: clamp(160px, 42vw, 245px);
+  margin: 0 0 18px;
+  border: 1px solid rgba(93, 235, 157, .28);
+  border-radius: 20px;
+  background: #0b1510;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .3), 0 0 24px rgba(30, 190, 111, .08);
+}
+
+.game-hero-banner > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+  transform: scale(1.015);
+}
+
+.game-hero-shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(4, 10, 7, .04) 15%, rgba(4, 10, 7, .28) 58%, rgba(4, 10, 7, .72)),
+    linear-gradient(0deg, rgba(3, 9, 6, .88), transparent 72%),
+    linear-gradient(135deg, rgba(25, 190, 105, .12), transparent 48%);
+  pointer-events: none;
+}
+
+.game-hero-caption {
+  position: absolute;
+  z-index: 1;
+  left: 17px;
+  right: 17px;
+  bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.game-hero-caption span {
+  color: #8af0b5;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 2.4px;
+  text-shadow: 0 1px 8px #000;
+}
+
+.game-hero-caption strong {
+  color: #fff;
+  font-size: clamp(18px, 5vw, 25px);
+  line-height: 1.12;
+  font-weight: 850;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, .9);
+}
+
+.game-detail > .game-detail-head {
+  display: none;
+}
+
+.game-currency-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 50px;
+  width: 50px;
+  height: 50px;
+  margin: 0 auto 9px;
+  overflow: hidden;
+  border: 1px solid rgba(142, 255, 190, .62);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 28% 20%, rgba(199, 255, 220, .35), transparent 38%),
+    linear-gradient(145deg, #1b7046 0%, #103b29 48%, #091b12 100%);
+  color: #d8ffe7;
+  font-size: 23px;
+  font-weight: 950;
+  letter-spacing: -.8px;
+  text-shadow: 0 0 12px rgba(111, 255, 174, .72);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, .2),
+    inset 0 -8px 14px rgba(0, 0, 0, .28),
+    0 5px 15px rgba(0, 0, 0, .28),
+    0 0 15px rgba(46, 210, 124, .12);
+}
+
+.game-currency-mark::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(207, 255, 225, .16);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+.mark-call-of-duty-mobile,
+.mark-ea-sports-fc-mobile {
+  font-size: 16px;
+  letter-spacing: -1px;
+}
+
+.mark-roblox {
+  background: linear-gradient(145deg, #315d4a, #101d17);
+}
+
+@media (max-width: 380px) {
+  .game-hero-banner {
+    height: 155px;
+    border-radius: 17px;
+  }
+  .game-currency-mark {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+    border-radius: 14px;
+  }
+}
