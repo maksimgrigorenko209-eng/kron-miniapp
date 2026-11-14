@@ -1324,14 +1324,32 @@ function App() {
                     confirmed: 'Подтверждена',
                   }[order.status] || order.status}</p>
                   <p><strong>Telegram ID:</strong> {order.user_id}</p>
-                  <p><strong>Криптовалюта:</strong> {order.order_data?.crypto}</p>
-                  <p><strong>Сеть:</strong> {order.order_data?.network}</p>
-                  <p><strong>Сумма:</strong> {order.order_data?.amount}</p>
-                  <p><strong>К выплате:</strong> {order.order_data?.total}</p>
-                  <p><strong>Страна:</strong> {order.order_data?.country}</p>
-                  <p><strong>Способ выплаты:</strong> {order.order_data?.paymentMethod}</p>
-                  <p><strong>Банк:</strong> {order.order_data?.bank || 'Не указан'}</p>
-                  <p><strong>Реквизиты:</strong> {order.order_data?.cardDetails || order.order_data?.cashDetails || 'Не указаны'}</p>
+                  {order.order_data?.type === 'game' ? (
+                    <>
+                      <p><strong>Тип заявки:</strong> Донат в игру</p>
+                      <p><strong>Игра:</strong> {order.order_data?.game}</p>
+                      <p><strong>Категория:</strong> {order.order_data?.category}</p>
+                      <p><strong>Товар:</strong> {order.order_data?.productName}</p>
+                      <p><strong>Игровой ID:</strong> {order.order_data?.playerId}</p>
+                      <p><strong>Цена:</strong> ${order.order_data?.priceUSD} USD</p>
+                      <p><strong>Криптовалюта:</strong> {order.order_data?.crypto}</p>
+                      <p><strong>К оплате:</strong> {order.order_data?.cryptoAmount} {order.order_data?.crypto}</p>
+                      <p><strong>Курс:</strong> {order.order_data?.marketRate} USDT за 1 {order.order_data?.crypto}</p>
+                      <p><strong>Сеть:</strong> {order.order_data?.network}</p>
+                      <p><strong>Адрес оплаты:</strong> {order.order_data?.walletAddress}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p><strong>Криптовалюта:</strong> {order.order_data?.crypto}</p>
+                      <p><strong>Сеть:</strong> {order.order_data?.network}</p>
+                      <p><strong>Сумма:</strong> {order.order_data?.amount}</p>
+                      <p><strong>К выплате:</strong> {order.order_data?.total}</p>
+                      <p><strong>Страна:</strong> {order.order_data?.country}</p>
+                      <p><strong>Способ выплаты:</strong> {order.order_data?.paymentMethod}</p>
+                      <p><strong>Банк:</strong> {order.order_data?.bank || 'Не указан'}</p>
+                      <p><strong>Реквизиты:</strong> {order.order_data?.cardDetails || order.order_data?.cashDetails || 'Не указаны'}</p>
+                    </>
+                  )}
 
                   <div className="admin-actions">
                     {order.status === 'awaiting_review' && (

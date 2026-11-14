@@ -258,6 +258,182 @@ export default async function handler(req, res) {
       });
     }
 
+
+    if (body.action === 'create_game_order') {
+      const category = String(body.category || '').trim();
+      const productId = String(body.productId || '').trim();
+      const playerId = String(body.playerId || '').trim();
+      const crypto = String(body.crypto || '').trim().toUpperCase();
+      const network = String(body.network || '').trim();
+      const walletAddress = walletAddresses[crypto]?.[network];
+
+      if (!playerId || playerId.length > 80) {
+        return res.status(400).json({ ok: false, error: 'Введите корректный игровой ID' });
+      }
+      if (!walletAddress) {
+        return res.status(400).json({ ok: false, error: 'Unsupported cryptocurrency network' });
+      }
+
+      let productName = '';
+      let priceUSD = 0;
+
+      if (category === 'Игровая валюта') {
+        const match = productId.match(/^uc-(\d+)$/);
+        const uc = match ? Number(match[1]) : 0;
+        const ucPrices = {
+          60: 0.97, 120: 1.95, 180: 2.98, 325: 4.86, 385: 5.82,
+          660: 10.99, 720: 10.68, 985: 14.55, 1320: 19.40,
+          1800: 26.99, 2125: 28.99, 2460: 30.99, 3850: 54.99,
+          5650: 69.99, 8100: 104.99, 9900: 119.99, 11950: 135.50,
+          16200: 180.96, 24300: 199.99, 40500: 449.99, 48600: 519.99,
+        };
+
+        if (!uc || !Object.prototype.hasOwnProperty.call(ucPrices, uc)) {
+          return res.status(400).json({ ok: false, error: 'Этот номинал UC сейчас недоступен' });
+        }
+
+        priceUSD = ucPrices[uc];
+        productName = `${uc.toLocaleString('en-US')} UC`;
+      } else if (category === 'Пропуски') {
+        const passes = {
+          'rp-1-50': { name: 'Обычный Royal Pass · уровни 1–50', price: 5.55 },
+          'rp-1-100': { name: 'Обычный Royal Pass · уровни 1–100', price: 10.68 },
+          'rp-upgraded-1-100': { name: 'Улучшенный Royal Pass · уровни 1–100', price: 28.00 },
+        };
+        const product = passes[productId];
+
+        if (!product) {
+          return res.status(400).json({ ok: false, error: 'Выбранный Royal Pass недоступен' });
+        }
+
+        productName = product.name;
+        priceUSD = product.price;
+      } else {
+        return res.status(400).json({ ok: false, error: 'Неподдерживаемая категория игрового товара' });
+      }
+
+      let marketRate = 1;
+      let rateSource = 'USD ≈ USDT/USDC';
+      let rateTimestamp = new Date().toISOString();
+
+      if (crypto === 'BTC' || crypto === 'ETH') {
+        try {
+          const rateResponse = await fetch(
+            `https://api.binance.com/api/v3/ticker/price?symbol=${crypto}USDT`,
+            { signal: AbortSignal.timeout(8000) }
+          );
+
+          if (!rateResponse.ok) {
+            return res.status(503).json({ ok: false, error: 'Не удалось получить актуальный курс. Попробуйте ещё раз.' });
+          }
+
+          const rateData = await rateResponse.json();
+          marketRate = Number(rateData.price);
+
+          if (!Number.isFinite(marketRate) || marketRate <= 0) {
+            return res.status(503).json({ ok: false, error: 'Биржа вернула некорректный курс. Попробуйте позже.' });
+          }
+
+          rateSource = 'Binance';
+          rateTimestamp = new Date().toISOString();
+        } catch (error) {
+          console.error('Game order market rate error:', error.message);
+          return res.status(503).json({ ok: false, error: 'Не удалось получить курс Binance. Попробуйте ещё раз.' });
+        }
+      } else if (crypto !== 'USDT' && crypto !== 'USDC') {
+        return res.status(400).json({ ok: false, error: 'Unsupported cryptocurrency' });
+      }
+
+      const precision = crypto === 'BTC' || crypto === 'ETH' ? 8 : 6;
+      const cryptoAmount = Number((priceUSD / marketRate).toFixed(precision));
+
+      if (!Number.isFinite(cryptoAmount) || cryptoAmount <= 0) {
+        return res.status(400).json({ ok: false, error: 'Не удалось рассчитать сумму оплаты' });
+      }
+
+      const orderId = `KR-${randomUUID().slice(0, 8).toUpperCase()}`;
+      const createdAt = new Intl.DateTimeFormat('ru-RU', {
+        timeZone: 'Europe/Chisinau',
+        dateStyle: 'short',
+        timeStyle: 'medium',
+      }).format(new Date());
+
+      const orderData = {
+        type: 'game',
+        game: 'PUBG Mobile',
+        category,
+        productId,
+        productName,
+        playerId,
+        priceUSD,
+        crypto,
+        network,
+        cryptoAmount,
+        amount: cryptoAmount,
+        total: cryptoAmount,
+        marketRate,
+        rateSource,
+        rateTimestamp,
+        walletAddress,
+      };
+
+      await supabaseRequest('orders', {
+        method: 'POST',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          id: orderId,
+          user_id: user.id,
+          status: 'awaiting_payment',
+          order_data: orderData,
+        }),
+      });
+
+      const message = [
+        '🎮 <b>НОВАЯ ИГРОВАЯ ЗАЯВКА KRON</b>',
+        `<b>Номер:</b> <code>${orderId}</code>`,
+        `<b>Дата:</b> ${escapeHtml(createdAt)} (Кишинёв)`,
+        '',
+        '<b>Клиент:</b>',
+        formatUser(user),
+        '',
+        '<b>Товар:</b>',
+        'Игра: <b>PUBG Mobile</b>',
+        `Категория: ${escapeHtml(category)}`,
+        `Позиция: <b>${escapeHtml(productName)}</b>`,
+        `Игровой ID: <code>${escapeHtml(playerId)}</code>`,
+        `Стоимость: <b>${priceUSD.toFixed(2)} USD</b>`,
+        '',
+        '<b>Оплата:</b>',
+        `К оплате: <b>${cryptoAmount} ${escapeHtml(crypto)}</b>`,
+        `Курс: 1 ${escapeHtml(crypto)} = ${marketRate} USDT (${escapeHtml(rateSource)})`,
+        `Сеть: ${escapeHtml(network)}`,
+        `Адрес: <code>${escapeHtml(walletAddress)}</code>`,
+        '',
+        'Статус: <b>Ожидает оплаты криптовалютой</b>',
+      ].join('\n');
+
+      const sent = await sendTelegramMessage(botToken, chatId, message);
+
+      return res.status(200).json({
+        ok: true,
+        orderId,
+        status: 'awaiting_payment',
+        game: 'PUBG Mobile',
+        category,
+        productName,
+        playerId,
+        priceUSD,
+        crypto,
+        network,
+        cryptoAmount,
+        walletAddress,
+        marketRate,
+        rateSource,
+        rateTimestamp,
+        notificationSent: Boolean(sent),
+      });
+    }
+
     if (body.action === 'update_network') {
       const orderId = String(body.orderId || '').slice(0, 40);
       const crypto = String(body.crypto || '');
@@ -348,10 +524,25 @@ export default async function handler(req, res) {
         return res.status(404).json({ ok: false, error: 'Order not found or already updated' });
       }
 
+      const orderData = updated[0].order_data || {};
+      const isGameOrder = orderData.type === 'game';
+
       const message = [
         '🟡 <b>КЛИЕНТ СООБЩИЛ ОБ ОТПРАВКЕ</b>',
         `<b>Заявка:</b> <code>${escapeHtml(orderId)}</code>`,
         `<b>Клиент:</b> ${formatUser(user)}`,
+        '',
+        ...(isGameOrder ? [
+          '<b>Игровой заказ:</b>',
+          `Игра: <b>${escapeHtml(orderData.game || '—')}</b>`,
+          `Товар: <b>${escapeHtml(orderData.productName || '—')}</b>`,
+          `Игровой ID: <code>${escapeHtml(orderData.playerId || '—')}</code>`,
+          `Цена: ${escapeHtml(orderData.priceUSD ?? '—')} USD`,
+        ] : []),
+        '<b>Оплата:</b>',
+        `К оплате: <b>${escapeHtml(orderData.cryptoAmount ?? orderData.total ?? '—')} ${escapeHtml(orderData.crypto || '')}</b>`,
+        `Сеть: ${escapeHtml(orderData.network || '—')}`,
+        `Адрес: <code>${escapeHtml(orderData.walletAddress || '—')}</code>`,
         '',
         '<b>Статус:</b> Ожидает проверки менеджером.',
         '<b>Важно:</b> поступление средств ещё не подтверждено.',
