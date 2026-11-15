@@ -2997,3 +2997,20 @@ button.game-category-card {
   font-size: 12px;
   line-height: 1.5;
 }
+
+
+/* KRON — оригинальные тематические иконки игровой валюты */
+.game-currency-mark .game-currency-art {
+  display: block;
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, .35));
+}
+
+@media (max-width: 380px) {
+  .game-currency-mark .game-currency-art {
+    width: 34px;
+    height: 34px;
+  }
+}

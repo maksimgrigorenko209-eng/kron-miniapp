@@ -94,6 +94,21 @@ const games = [
   { id: 'arena-breakout', name: 'Arena Breakout', icon: '/games/arena-breakout.jpg' },
 ];
 
+const gameArtwork = {
+  'free-fire': 'free_fire',
+  'mobile-legends': 'mobile_legends',
+  'roblox': 'roblox',
+  'standoff-2': 'standoff_2',
+  'brawl-stars': 'brawl_stars',
+  'call-of-duty-mobile': 'call_of_duty_mobile',
+  'genshin-impact': 'genshin_impact',
+  'clash-of-clans': 'clash_of_clans',
+  'ea-sports-fc-mobile': 'fc_mobile',
+  'honkai-star-rail': 'honkai_star_rail',
+  'arena-breakout': 'arena_breakout',
+};
+
+
 
 const pubgUcProducts = [
   { uc: 60, price: 0.97 },
@@ -856,7 +871,7 @@ function App() {
                 {selectedGame.id !== 'pubg-mobile' && (
                   <div className="game-hero-banner">
                     <img
-                      src={selectedGame.versions?.find((version) => version.name === selectedGameVersion)?.icon || selectedGame.icon}
+                      src={`/games/kron-artwork/${gameArtwork[selectedGame.id]}_banner.jpg`}
                       alt={selectedGame.name}
                     />
                     <div className="game-hero-caption">
@@ -949,18 +964,11 @@ function App() {
                                   {isPubgUc && <img src="/games/kron-uc-token-art.png" alt="" />}
                                   {category === 'Игровая валюта' && !isPubgUc && (
                                     <span className={`game-currency-mark mark-${selectedGame.id}`} aria-hidden="true">
-                                      {{
-                                        'free-fire': '◆',
-                                        'mobile-legends': '💎',
-                                        'standoff-2': 'G',
-                                        'brawl-stars': '💎',
-                                        'call-of-duty-mobile': 'CP',
-                                        'genshin-impact': '✦',
-                                        'clash-of-clans': '💎',
-                                        'ea-sports-fc-mobile': 'FC',
-                                        'honkai-star-rail': '✧',
-                                        'arena-breakout': 'B',
-                                      }[selectedGame.id] || '✦'}
+                                      <img
+                                        className="game-currency-art"
+                                        src={`/games/kron-artwork/${gameArtwork[selectedGame.id]}_currency.png`}
+                                        alt=""
+                                      />
                                     </span>
                                   )}
                                   <strong>{product.name}</strong>
