@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual, randomUUID } from 'node:crypto';
 import { gameCatalog, findGameProduct } from '../gameCatalog.js';
+import { findSubscriptionPlan } from '../subscriptionCatalog.js';
 
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, (char) => ({
@@ -135,6 +136,13 @@ function statusLabel(status) {
   }[status] || 'Неизвестный статус';
 }
 
+const allowedNetworksByCrypto = {
+  USDT: ['TRC20', 'ERC20', 'BEP20'],
+  USDC: ['BEP20', 'ERC20', 'Solana'],
+  BTC: ['Bitcoin'],
+  ETH: ['BEP20'],
+};
+
 const walletAddresses = {
   USDT: {
     TRC20: 'TY1cgmyBxjGGLCecfRXgr3RD4Ytb7EhRru',
@@ -260,6 +268,166 @@ export default async function handler(req, res) {
     }
 
 
+
+    if (body.action === 'create_subscription_order') {
+      const serviceId = String(body.serviceId || '').trim();
+      const planId = String(body.planId || '').trim();
+      const accountDetails = String(body.accountDetails || '').trim();
+      if (!accountDetails || accountDetails.length > 300) {
+        return res.status(400).json({ ok: false, error: 'Укажите корректные данные аккаунта для оформления подписки.' });
+      }
+      const crypto = String(body.crypto || '').trim().toUpperCase();
+      const network = String(body.network || '').trim();
+
+      const walletAddress = allowedNetworksByCrypto[crypto]?.includes(network)
+        ? walletAddresses[crypto]?.[network]
+        : null;
+
+      const found = findSubscriptionPlan(serviceId, planId);
+      if (!found) {
+        return res.status(400).json({ ok: false, error: 'Выбранная подписка или тариф не найдены.' });
+      }
+
+      const { group, service, plan } = found;
+      if (plan.provisional) {
+        return res.status(400).json({ ok: false, error: 'Тариф временно недоступен для заказа: цена уточняется.' });
+      }
+
+      const priceUSD = Number(plan.kron);
+      if (!Number.isFinite(priceUSD) || priceUSD <= 0) {
+        return res.status(400).json({ ok: false, error: 'Для этого тарифа не задана корректная цена.' });
+      }
+      if (!walletAddress) {
+        return res.status(400).json({ ok: false, error: 'Выбрана неподдерживаемая сеть оплаты.' });
+      }
+
+      let marketRate = 1;
+      let rateSource = 'USD ≈ USDT/USDC';
+      let rateTimestamp = new Date().toISOString();
+
+      if (crypto === 'BTC' || crypto === 'ETH') {
+        try {
+          const rateResponse = await fetch(
+            `https://api.binance.com/api/v3/ticker/price?symbol=${crypto}USDT`,
+            { signal: AbortSignal.timeout(8000) }
+          );
+          if (!rateResponse.ok) {
+            return res.status(503).json({ ok: false, error: 'Не удалось получить актуальный курс. Попробуйте ещё раз.' });
+          }
+          const rateData = await rateResponse.json();
+          marketRate = Number(rateData.price);
+          if (!Number.isFinite(marketRate) || marketRate <= 0) {
+            return res.status(503).json({ ok: false, error: 'Биржа вернула некорректный курс. Попробуйте позже.' });
+          }
+          rateSource = 'Binance';
+          rateTimestamp = new Date().toISOString();
+        } catch (error) {
+          console.error('Subscription order market rate error:', error.message);
+          return res.status(503).json({ ok: false, error: 'Не удалось получить курс Binance. Попробуйте ещё раз.' });
+        }
+      } else if (crypto !== 'USDT' && crypto !== 'USDC') {
+        return res.status(400).json({ ok: false, error: 'Неподдерживаемая криптовалюта.' });
+      }
+
+      const precision = crypto === 'BTC' || crypto === 'ETH' ? 8 : 6;
+      const cryptoAmount = Number((priceUSD / marketRate).toFixed(precision));
+      if (!Number.isFinite(cryptoAmount) || cryptoAmount <= 0) {
+        return res.status(400).json({ ok: false, error: 'Не удалось рассчитать сумму оплаты.' });
+      }
+
+      const orderId = `KR-${randomUUID().slice(0, 8).toUpperCase()}`;
+      const createdAt = new Intl.DateTimeFormat('ru-RU', {
+        timeZone: 'Europe/Chisinau',
+        dateStyle: 'short',
+        timeStyle: 'medium',
+      }).format(new Date());
+
+      const orderData = {
+        type: 'subscription',
+        serviceId,
+        serviceName: service.name,
+        groupId: group.id,
+        groupName: group.title,
+        planId,
+        planName: plan.name,
+        accountDetails,
+        annual: Boolean(plan.annual),
+        monthlyKron: plan.monthlyKron ?? null,
+        priceUSD,
+        crypto,
+        network,
+        cryptoAmount,
+        amount: cryptoAmount,
+        total: cryptoAmount,
+        marketRate,
+        rateSource,
+        rateTimestamp,
+        walletAddress,
+      };
+
+      await supabaseRequest('orders', {
+        method: 'POST',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          id: orderId,
+          user_id: user.id,
+          status: 'awaiting_payment',
+          order_data: orderData,
+        }),
+      });
+
+      const message = [
+        '💎 <b>НОВАЯ ЗАЯВКА KRON — ПОДПИСКА</b>',
+        `<b>Номер:</b> <code>${orderId}</code>`,
+        `<b>Дата:</b> ${escapeHtml(createdAt)} (Кишинёв)`,
+        '',
+        '<b>Клиент:</b>',
+        formatUser(user),
+        '',
+        '<b>Подписка:</b>',
+        `Группа: ${escapeHtml(group.title)}`,
+        `Сервис: <b>${escapeHtml(service.name)}</b>`,
+        `Тариф: <b>${escapeHtml(plan.name)}</b>`,
+        `Данные для оформления: <code>${escapeHtml(accountDetails)}</code>`,
+        ...(plan.annual ? [
+          'Тип: годовая подписка',
+          `Месячный эквивалент: ${escapeHtml(plan.monthlyKron ?? '—')} USD/мес.`,
+          `Полная оплата за год: ${priceUSD.toFixed(2)} USD`,
+        ] : [`Стоимость: ${priceUSD.toFixed(2)} USD`]),
+        '',
+        '<b>Оплата:</b>',
+        `К оплате: <b>${cryptoAmount} ${escapeHtml(crypto)}</b>`,
+        `Курс: 1 ${escapeHtml(crypto)} = ${marketRate} USDT (${escapeHtml(rateSource)})`,
+        `Сеть: ${escapeHtml(network)}`,
+        `Адрес: <code>${escapeHtml(walletAddress)}</code>`,
+        '',
+        'Статус: <b>Ожидает оплаты криптовалютой</b>',
+      ].join('\n');
+
+      const sent = await sendTelegramMessage(botToken, chatId, message);
+
+      return res.status(200).json({
+        ok: true,
+        orderId,
+        status: 'awaiting_payment',
+        serviceId,
+        serviceName: service.name,
+        planId,
+        planName: plan.name,
+        annual: Boolean(plan.annual),
+        monthlyKron: plan.monthlyKron ?? null,
+        priceUSD,
+        crypto,
+        network,
+        cryptoAmount,
+        walletAddress,
+        marketRate,
+        rateSource,
+        rateTimestamp,
+        notificationSent: Boolean(sent),
+      });
+    }
+
     if (body.action === 'create_game_order') {
       const gameId = String(body.gameId || '').trim();
       const game = gameCatalog[gameId];
@@ -384,7 +552,9 @@ export default async function handler(req, res) {
       const orderId = String(body.orderId || '').slice(0, 40);
       const crypto = String(body.crypto || '');
       const network = String(body.network || '');
-      const walletAddress = walletAddresses[crypto]?.[network];
+      const walletAddress = allowedNetworksByCrypto[crypto]?.includes(network)
+        ? walletAddresses[crypto]?.[network]
+        : null;
 
       if (!orderId || !walletAddress) {
         return res.status(400).json({ ok: false, error: 'Invalid order or network' });
@@ -472,6 +642,7 @@ export default async function handler(req, res) {
 
       const orderData = updated[0].order_data || {};
       const isGameOrder = orderData.type === 'game';
+      const isSubscriptionOrder = orderData.type === 'subscription';
 
       const message = [
         '🟡 <b>КЛИЕНТ СООБЩИЛ ОБ ОТПРАВКЕ</b>',
@@ -484,6 +655,17 @@ export default async function handler(req, res) {
           `Товар: <b>${escapeHtml(orderData.productName || '—')}</b>`,
           `Игровой ID: <code>${escapeHtml(orderData.playerId || '—')}</code>`,
           `Цена: ${escapeHtml(orderData.priceUSD ?? '—')} USD`,
+        ] : []),
+        ...(isSubscriptionOrder ? [
+          '<b>Подписка:</b>',
+          `Сервис: <b>${escapeHtml(orderData.serviceName || '—')}</b>`,
+          `Тариф: <b>${escapeHtml(orderData.planName || '—')}</b>`,
+          `Данные для оформления: <code>${escapeHtml(orderData.accountDetails || '—')}</code>`,
+          ...(orderData.annual ? [
+            'Тип: годовая подписка',
+            `Месячный эквивалент: ${escapeHtml(orderData.monthlyKron ?? '—')} USD/мес.`,
+            `Полная стоимость: ${escapeHtml(orderData.priceUSD ?? '—')} USD за год`,
+          ] : [`Стоимость: ${escapeHtml(orderData.priceUSD ?? '—')} USD`]),
         ] : []),
         '<b>Оплата:</b>',
         `К оплате: <b>${escapeHtml(orderData.cryptoAmount ?? orderData.total ?? '—')} ${escapeHtml(orderData.crypto || '')}</b>`,

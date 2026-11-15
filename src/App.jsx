@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import { gameCatalog, findGameProduct } from '../gameCatalog.js';
+import { subscriptionGroups, findSubscriptionPlan } from '../subscriptionCatalog.js';
 import {
   WalletTrust,
   WalletMetamask,
@@ -139,6 +140,10 @@ function App() {
   const [gamePlayerId, setGamePlayerId] = useState('');
   const [gameAccountData, setGameAccountData] = useState({});
   const [gamePayment, setGamePayment] = useState(null);
+  const [selectedSubscription, setSelectedSubscription] = useState(null);
+  const [selectedSubscriptionPlan, setSelectedSubscriptionPlan] = useState(null);
+  const [subscriptionAccountDetails, setSubscriptionAccountDetails] = useState('');
+  const [subscriptionPayment, setSubscriptionPayment] = useState(null);
   const [paymentSource, setPaymentSource] = useState('exchange');
   const selectedGameCatalog = selectedGame ? gameCatalog[selectedGame.id] : null;
 
@@ -196,7 +201,9 @@ function App() {
 
   const paymentAmount = paymentSource === 'game'
     ? Number(gamePayment?.cryptoAmount ?? gamePayment?.priceUSD ?? 0)
-    : totalAmount;
+    : paymentSource === 'subscription'
+      ? Number(subscriptionPayment?.cryptoAmount ?? 0)
+      : totalAmount;
 
   const formatNumber = (value) =>
     new Intl.NumberFormat('ru-RU', {
@@ -368,6 +375,77 @@ function App() {
       setPage('Криптооплата');
     } catch (error) {
       setOrderError(error.message || 'Не удалось создать игровую заявку.');
+    } finally {
+      setOrderLoading(false);
+    }
+  };
+
+
+  const handleCreateSubscriptionOrder = async () => {
+    if (!selectedSubscription || !selectedSubscriptionPlan) {
+      setOrderError('Выберите тариф подписки.');
+      return;
+    }
+
+    const found = findSubscriptionPlan(selectedSubscription.id, selectedSubscriptionPlan);
+    if (!found || found.plan.provisional) {
+      setOrderError('Этот тариф пока недоступен для заказа.');
+      return;
+    }
+
+    const { plan } = found;
+    const accountDetails = subscriptionAccountDetails.trim();
+    if (!accountDetails) {
+      setOrderError('Укажите данные аккаунта для оформления подписки.');
+      return;
+    }
+    if (accountDetails.length > 300) {
+      setOrderError('Максимальная длина данных — 300 символов.');
+      return;
+    }
+    setOrderLoading(true);
+    setOrderError('');
+
+    try {
+      const result = isLocalPreview
+        ? (() => {
+            const priceUSD = Number(plan.kron);
+            const walletAddress = addressesByCrypto[selectedCurrency]?.[selectedNetwork];
+            if (!Number.isFinite(priceUSD) || priceUSD <= 0) {
+              throw new Error('Для тарифа не задана цена.');
+            }
+            if (!walletAddress) {
+              throw new Error('Выберите доступную сеть оплаты.');
+            }
+            return {
+              orderId: `KR-TEST-${Date.now()}`,
+              serviceName: selectedSubscription.name,
+              planName: plan.name,
+              accountDetails,
+              priceUSD,
+              crypto: selectedCurrency,
+              network: selectedNetwork,
+              cryptoAmount: Number(priceUSD.toFixed(6)),
+              walletAddress,
+              marketRate: 1,
+            };
+          })()
+        : await sendOrderAction('create_subscription_order', {
+            serviceId: selectedSubscription.id,
+            planId: plan.id,
+            accountDetails,
+            crypto: selectedCurrency,
+            network: selectedNetwork,
+          });
+
+      setOrderId(result.orderId);
+      localStorage.setItem('kronOrderId', result.orderId);
+      setOrderStatus('awaiting_payment');
+      setPaymentSource('subscription');
+      setSubscriptionPayment(result);
+      setPage('Криптооплата');
+    } catch (error) {
+      setOrderError(error.message || 'Не удалось создать заявку на подписку.');
     } finally {
       setOrderLoading(false);
     }
@@ -598,9 +676,10 @@ function App() {
           <button
             className="back"
             onClick={() => setPage(
-              page === 'game-detail' ? 'Донат в игры' :
+              page === 'game-detail' || page === 'subscription-detail' ? 'Донат в игры' :
               page === 'Донат в игры' ? 'home' :
               page === 'Статус' || page === 'Админ-панель' ? 'home' :
+              page === 'Криптооплата' && paymentSource === 'subscription' ? 'subscription-detail' :
               page === 'Криптооплата' ? 'Оплата' :
               page === 'Оплата' ? 'Курс валют' : 'home'
             )}
@@ -609,7 +688,7 @@ function App() {
           </button>
 
           <p className="eyebrow">РАЗДЕЛ KRON</p>
-          <h1>{page === 'game-detail' ? selectedGame?.name : page}</h1>
+          <h1>{page === 'game-detail' ? selectedGame?.name : page === 'subscription-detail' ? selectedSubscription?.name : page}</h1>
 
           {page === 'Донат в игры' && (
             <section className="donate-hub">
@@ -709,30 +788,66 @@ function App() {
                 </button>
               ))}
             </div>
+            ) : donateCategory === 'subscriptions' ? (
+              <section className="subscriptions-catalog">
+                {subscriptionGroups.map((group) => {
+                  const filteredServices = group.services.filter((service) =>
+                    service.name.toLowerCase().includes(donateSearch.trim().toLowerCase())
+                  );
+
+                  if (filteredServices.length === 0) return null;
+
+                  return (
+                    <div className="subscription-group" key={group.id}>
+                      <div className="subscription-group-heading">
+                        <h2>{group.title}</h2>
+                        <span>{filteredServices.length}</span>
+                      </div>
+
+                      <div className="subscriptions-grid">
+                        {filteredServices.map((service) => (
+                          <button
+                            type="button"
+                            className="subscription-card"
+                            key={service.id}
+                            onClick={() => {
+                              setSelectedSubscription(service);
+                              setSelectedSubscriptionPlan(null);
+                              setOrderError('');
+                              setPage('subscription-detail');
+                            }}
+                          >
+                            <span className="subscription-monogram">
+                              {service.name.split(/\s+/).map((word) => word[0]).slice(0, 2).join('').toUpperCase()}
+                            </span>
+                            <span className="subscription-name">{service.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {!subscriptionGroups.some((group) =>
+                  group.services.some((service) =>
+                    service.name.toLowerCase().includes(donateSearch.trim().toLowerCase())
+                  )
+                ) && (
+                  <div className="subscriptions-empty">
+                    Ничего не найдено. Попробуйте изменить запрос.
+                  </div>
+                )}
+              </section>
             ) : (
               <div className="donate-coming-soon">
                 <span className="donate-coming-soon-icon">
-                  {donateCategory === 'subscriptions' ? (
-                    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
-                      <path d="m7 15 10 8 7-13 7 13 10-8-4 21H11L7 15Z" fill="rgba(91,224,157,.12)" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
-                      <path d="M11 32h26M13 39h22" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-                      <circle cx="7" cy="13" r="2.3" fill="currentColor"/>
-                      <circle cx="24" cy="8" r="2.3" fill="currentColor"/>
-                      <circle cx="41" cy="13" r="2.3" fill="currentColor"/>
-                    </svg>
-                  ) : (
-                    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
-                      <path d="M5 22.5 43 7 32 41l-9-12.5-7 5 1.5-9L35 13 13 23.5 5 22.5Z" fill="rgba(91,224,157,.12)" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
-                      <path d="m16.5 24.5 7 4L35 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
+                  <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                    <path d="M5 22.5 43 7 32 41l-9-12.5-7 5 1.5-9L35 13 13 23.5 5 22.5Z" fill="rgba(91,224,157,.12)" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                    <path d="m16.5 24.5 7 4L35 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </span>
                 <h2>Скоро в KRON</h2>
-                <p>
-                  {donateCategory === 'subscriptions'
-                    ? 'Каталог интернет-подписок скоро появится здесь.'
-                    : 'Пополнение и цифровые товары Telegram скоро появятся здесь.'}
-                </p>
+                <p>Пополнение и цифровые товары Telegram скоро появятся здесь.</p>
               </div>
             )
           ) : page === 'game-detail' ? (
@@ -925,6 +1040,94 @@ function App() {
               </div>
             ) : (
               <p className="subtitle">Выберите игру в каталоге.</p>
+            )
+          ) : page === 'subscription-detail' ? (
+            selectedSubscription ? (
+              <section className="subscription-detail">
+                <div className="subscription-detail-intro">
+                  <p>Выберите подходящий тариф</p>
+                  <span>Оплата криптовалютой · Ручная проверка KRON</span>
+                </div>
+
+                <div className="subscription-plans">
+                  {selectedSubscription.plans.map((plan) => {
+                    const unavailable = Boolean(plan.provisional);
+                    const selected = selectedSubscriptionPlan === plan.id;
+
+                    return (
+                      <button
+                        type="button"
+                        key={plan.id}
+                        className={`subscription-plan ${selected ? 'selected' : ''}`}
+                        disabled={unavailable}
+                        onClick={() => {
+                          setSelectedSubscriptionPlan(plan.id);
+                          setOrderError('');
+                        }}
+                      >
+                        <span className="subscription-plan-name">{plan.name}</span>
+
+                        {unavailable ? (
+                          <strong className="subscription-plan-price">Цена уточняется</strong>
+                        ) : plan.annual ? (
+                          <>
+                            <strong className="subscription-plan-price">
+                              ${Number(plan.kron).toFixed(2)} / год
+                            </strong>
+                            <span className="subscription-plan-note">
+                              ${Number(plan.monthlyKron).toFixed(2)} в месяц
+                            </span>
+                            <span className="subscription-annual-note">
+                              Оплата за весь год
+                            </span>
+                          </>
+                        ) : (
+                          <strong className="subscription-plan-price">
+                            ${Number(plan.kron).toFixed(2)}
+                          </strong>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {selectedSubscriptionPlan && !selectedSubscription.plans.find((plan) => plan.id === selectedSubscriptionPlan)?.provisional && (
+                  <div className="subscription-account-field">
+                    <label htmlFor="subscription-account-details">Куда оформить подписку?</label>
+                    <input
+                      id="subscription-account-details"
+                      type="text"
+                      value={subscriptionAccountDetails}
+                      onChange={(event) => {
+                        setSubscriptionAccountDetails(event.target.value);
+                        setOrderError('');
+                      }}
+                      placeholder="Email, логин или username"
+                      maxLength={300}
+                      autoComplete="off"
+                    />
+                    <span>Укажите аккаунт для оформления. Не вводите пароль.</span>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={
+                    orderLoading ||
+                    !subscriptionAccountDetails.trim() ||
+                    !selectedSubscriptionPlan ||
+                    selectedSubscription.plans.find((plan) => plan.id === selectedSubscriptionPlan)?.provisional
+                  }
+                  onClick={handleCreateSubscriptionOrder}
+                >
+                  {orderLoading ? 'Создаём заявку...' : 'Перейти к оплате'}
+                </button>
+
+                {orderError && <p className="calculator-note">{orderError}</p>}
+              </section>
+            ) : (
+              <p className="subtitle">Выберите подписку в каталоге.</p>
             )
           ) : page === 'Курс валют' ? (
             <div className="currency-page">
@@ -1187,6 +1390,12 @@ function App() {
             </div>
           ) : page === 'Криптооплата' ? (
             <div className="payment-page">
+              {paymentSource === 'subscription' && (
+                <div className="payment-order-label">
+                  <strong>{subscriptionPayment?.serviceName || selectedSubscription?.name}</strong>
+                  <span>{subscriptionPayment?.planName || selectedSubscription?.plans.find((plan) => plan.id === selectedSubscriptionPlan)?.name}</span>
+                </div>
+              )}
               <p className="field-label">Сумма к оплате</p>
               <div className="payment-summary">
                 <strong>{formatNumber(paymentAmount)} {selectedCurrency}</strong>
