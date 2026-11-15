@@ -1693,7 +1693,23 @@ function App() {
                     confirmed: 'Подтверждена',
                   }[order.status] || order.status}</p>
                   <p><strong>Telegram ID:</strong> {order.user_id}</p>
-                  {order.order_data?.type === 'game' ? (
+                  {order.order_data?.type === 'subscription' ? (
+                    <>
+                      <p><strong>Тип заявки:</strong> Подписка</p>
+                      <p><strong>Группа:</strong> {order.order_data?.groupName}</p>
+                      <p><strong>Сервис:</strong> {order.order_data?.serviceName}</p>
+                      <p><strong>Тариф:</strong> {order.order_data?.planName}</p>
+                      <p><strong>Куда оформить:</strong> {order.order_data?.accountDetails || 'Не указано'}</p>
+                      <p><strong>Цена:</strong> ${order.order_data?.priceUSD} USD</p>
+                      {order.order_data?.annual && (
+                        <p><strong>Месячный эквивалент:</strong> ${order.order_data?.monthlyKron} USD</p>
+                      )}
+                      <p><strong>К оплате:</strong> {order.order_data?.cryptoAmount} {order.order_data?.crypto}</p>
+                      <p><strong>Курс:</strong> {order.order_data?.marketRate} USDT за 1 {order.order_data?.crypto}</p>
+                      <p><strong>Сеть:</strong> {order.order_data?.network}</p>
+                      <p><strong>Адрес оплаты:</strong> {order.order_data?.walletAddress}</p>
+                    </>
+                  ) : order.order_data?.type === 'game' ? (
                     <>
                       <p><strong>Тип заявки:</strong> Донат в игру</p>
                       <p><strong>Игра:</strong> {order.order_data?.game}</p>
