@@ -185,6 +185,16 @@ function App() {
   const [adminLoading, setAdminLoading] = useState(false);
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState('');
+  const [telegramGifts, setTelegramGifts] = useState([]);
+  const [telegramGiftsLoading, setTelegramGiftsLoading] = useState(false);
+  const [telegramGiftsError, setTelegramGiftsError] = useState('');
+  const [telegramGiftsReload, setTelegramGiftsReload] = useState(0);
+  const [selectedTelegramGift, setSelectedTelegramGift] = useState(null);
+  const [telegramGiftUsername, setTelegramGiftUsername] = useState('');
+  const [telegramGiftSubmitting, setTelegramGiftSubmitting] = useState(false);
+  const [telegramGiftError, setTelegramGiftError] = useState('');
+  const [telegramGiftOrderId, setTelegramGiftOrderId] = useState('');
+
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
@@ -192,6 +202,42 @@ function App() {
     tg.ready();
     tg.expand();
   }, []);
+
+  useEffect(() => {
+    if (page !== 'Донат в игры' || donateCategory !== 'telegram') return;
+
+    let cancelled = false;
+
+    const loadGifts = async () => {
+      setTelegramGiftsLoading(true);
+      setTelegramGiftsError('');
+
+      try {
+        const response = await fetch('/api/telegram-gifts');
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          throw new Error(result.error || 'Не удалось загрузить подарки.');
+        }
+
+        if (!cancelled) {
+          setTelegramGifts(Array.isArray(result.gifts) ? result.gifts : []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setTelegramGiftsError(error.message || 'Ошибка загрузки подарков.');
+        }
+      } finally {
+        if (!cancelled) setTelegramGiftsLoading(false);
+      }
+    };
+
+    loadGifts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page, donateCategory, telegramGiftsReload]);
 
   const sections = [
     { icon: '💱', title: 'Курс валют', desc: 'Актуальные курсы валют' },
@@ -325,6 +371,36 @@ function App() {
   useEffect(() => {
     loadAdminOrders();
   }, []);
+
+  const handleCreateTelegramGiftRequest = async () => {
+    if (!selectedTelegramGift) {
+      setTelegramGiftError('Сначала выберите подарок.');
+      return;
+    }
+
+    const username = telegramGiftUsername.trim().replace(/^@/, '');
+
+    if (!/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(username)) {
+      setTelegramGiftError('Укажите корректный Telegram username получателя.');
+      return;
+    }
+
+    setTelegramGiftSubmitting(true);
+    setTelegramGiftError('');
+
+    try {
+      const result = await sendOrderAction('create_telegram_gift_request', {
+        giftId: selectedTelegramGift.id,
+        recipientUsername: username,
+      });
+
+      setTelegramGiftOrderId(result.orderId);
+    } catch (error) {
+      setTelegramGiftError(error.message || 'Не удалось отправить заявку.');
+    } finally {
+      setTelegramGiftSubmitting(false);
+    }
+  };
 
   const handleCreateGameOrder = async () => {
     if (!selectedGame || !selectedGameCatalog || !selectedGameProduct) {
@@ -854,16 +930,169 @@ function App() {
                 )}
               </section>
             ) : (
-              <div className="donate-coming-soon">
-                <span className="donate-coming-soon-icon">
-                  <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
-                    <path d="M5 22.5 43 7 32 41l-9-12.5-7 5 1.5-9L35 13 13 23.5 5 22.5Z" fill="rgba(91,224,157,.12)" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
-                    <path d="m16.5 24.5 7 4L35 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </span>
-                <h2>Скоро в KRON</h2>
-                <p>Пополнение и цифровые товары Telegram скоро появятся здесь.</p>
-              </div>
+              <section className="telegram-gifts-catalog">
+                <div className="telegram-gifts-heading">
+                  <div>
+                    <h2>Подарки Telegram</h2>
+                    <p>Выберите подарок. Цена указана в Telegram Stars.</p>
+                  </div>
+                  <span className="telegram-gifts-badge">GIFTS</span>
+                </div>
+
+                {telegramGiftsLoading ? (
+                  <div className="subscriptions-empty">Загружаем доступные подарки…</div>
+                ) : telegramGiftsError ? (
+                  <div className="subscriptions-empty">
+                    <p>{telegramGiftsError}</p>
+                    <button
+                      type="button"
+                      className="telegram-gifts-retry"
+                      onClick={() => setTelegramGiftsReload((value) => value + 1)}
+                    >
+                      Повторить загрузку
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="telegram-gifts-grid">
+                      {telegramGifts
+                        .filter((gift) => {
+                          const query = donateSearch.trim().toLowerCase();
+                          return !query || [
+                            gift.id,
+                            gift.emoji,
+                            gift.starCount,
+                          ].some((value) => String(value ?? '').toLowerCase().includes(query));
+                        })
+                        .map((gift) => (
+                          <button
+                            type="button"
+                            key={gift.id}
+                            className={`telegram-gift-card ${selectedTelegramGift?.id === gift.id ? 'active' : ''}`}
+                            onClick={() => {
+                              setSelectedTelegramGift(gift);
+                              setTelegramGiftError('');
+                              setTelegramGiftOrderId('');
+                            }}
+                          >
+                            <span className="telegram-gift-image">
+                              {gift.imageUrl ? (
+                                <img src={gift.imageUrl} alt="" loading="lazy" />
+                              ) : (
+                                <span>{gift.emoji || '🎁'}</span>
+                              )}
+                            </span>
+                            <span className="telegram-gift-title">
+                              {gift.emoji || '🎁'} Подарок Telegram
+                            </span>
+                            <strong className="telegram-gift-price">
+                              ⭐ {gift.starCount} Stars
+                            </strong>
+                            {Number.isFinite(Number(gift.remainingCount)) && gift.remainingCount !== null && (
+                              <span className="telegram-gift-stock">
+                                Осталось: {gift.remainingCount}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                    </div>
+
+                    {!telegramGifts.length && (
+                      <div className="subscriptions-empty">
+                        Сейчас бот не получил список доступных подарков.
+                      </div>
+                    )}
+
+                    {telegramGifts.length > 0 && !telegramGifts.some((gift) => {
+                      const query = donateSearch.trim().toLowerCase();
+                      return !query || [
+                        gift.id,
+                        gift.emoji,
+                        gift.starCount,
+                      ].some((value) => String(value ?? '').toLowerCase().includes(query));
+                    }) && (
+                      <div className="subscriptions-empty">
+                        По вашему запросу подарки не найдены.
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {selectedTelegramGift && !telegramGiftOrderId && (
+                  <div className="telegram-gift-order">
+                    <div className="telegram-gift-selected">
+                      <span>{selectedTelegramGift.emoji || '🎁'}</span>
+                      <div>
+                        <strong>Выбран подарок</strong>
+                        <p>⭐ {selectedTelegramGift.starCount} Telegram Stars</p>
+                      </div>
+                    </div>
+
+                    <label className="telegram-gift-label" htmlFor="telegram-gift-username">
+                      Username получателя
+                    </label>
+                    <input
+                      id="telegram-gift-username"
+                      className="telegram-gift-input"
+                      type="text"
+                      value={telegramGiftUsername}
+                      onChange={(event) => setTelegramGiftUsername(event.target.value)}
+                      placeholder="@username"
+                      autoComplete="off"
+                    />
+
+                    <p className="telegram-gift-note">
+                      После отправки заявки менеджер свяжется с вами, согласует получение Stars и отправит подарок.
+                    </p>
+
+                    {telegramGiftError && (
+                      <p className="telegram-gift-error">{telegramGiftError}</p>
+                    )}
+
+                    <button
+                      type="button"
+                      className="primary-button telegram-gift-submit"
+                      disabled={telegramGiftSubmitting}
+                      onClick={handleCreateTelegramGiftRequest}
+                    >
+                      {telegramGiftSubmitting ? 'Отправляем заявку…' : 'Отправить заявку на покупку'}
+                    </button>
+                  </div>
+                )}
+
+                {telegramGiftOrderId && (
+                  <div className="telegram-gift-success">
+                    <span>✓</span>
+                    <h3>Заявка отправлена</h3>
+                    <p>Номер заявки: <strong>{telegramGiftOrderId}</strong></p>
+                    <p>Менеджер KRON свяжется с вами для согласования оплаты в Stars и отправки подарка.</p>
+                    <button
+                      type="button"
+                      className="telegram-gifts-retry"
+                      onClick={() => {
+                        setTelegramGiftOrderId('');
+                        setSelectedTelegramGift(null);
+                        setTelegramGiftUsername('');
+                        setTelegramGiftError('');
+                      }}
+                    >
+                      Выбрать другой подарок
+                    </button>
+                  </div>
+                )}
+
+                <div className="telegram-gift-coming">
+                  <div>
+                    <strong>⭐ Пополнение Telegram Stars</strong>
+                    <span>Оплата USDT</span>
+                  </div>
+                  <div>
+                    <strong>💎 Telegram Premium</strong>
+                    <span>Оплата USDT</span>
+                  </div>
+                  <p>Эти товары оформляются отдельно от каталога подарков.</p>
+                </div>
+              </section>
             )
           ) : page === 'game-detail' ? (
             selectedGame ? (

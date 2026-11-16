@@ -685,6 +685,103 @@ export default async function handler(req, res) {
       });
     }
 
+
+    if (body.action === 'create_telegram_gift_request') {
+      const giftId = String(body.giftId || '').trim();
+      const recipientUsername = String(body.recipientUsername || '')
+        .trim()
+        .replace(/^@/, '');
+
+      if (!giftId || giftId.length > 200) {
+        return res.status(400).json({ ok: false, error: 'Выберите подарок.' });
+      }
+
+      if (!/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(recipientUsername)) {
+        return res.status(400).json({ ok: false, error: 'Укажите корректный Telegram username получателя.' });
+      }
+
+      const giftsResponse = await fetch(
+        `https://api.telegram.org/bot${botToken}/getAvailableGifts`,
+        { signal: AbortSignal.timeout(10000) }
+      );
+      const giftsResult = await giftsResponse.json();
+
+      if (!giftsResponse.ok || !giftsResult.ok || !Array.isArray(giftsResult.result?.gifts)) {
+        console.error('Gift request validation failed:', giftsResult.description || giftsResponse.status);
+        return res.status(502).json({ ok: false, error: 'Не удалось проверить наличие подарка. Попробуйте позже.' });
+      }
+
+      const gift = giftsResult.result.gifts.find((item) => String(item.id) === giftId);
+
+      if (!gift) {
+        return res.status(400).json({ ok: false, error: 'Этот подарок больше недоступен. Обновите каталог.' });
+      }
+
+      const starCount = Number(gift.star_count);
+
+      if (!Number.isFinite(starCount) || starCount <= 0) {
+        return res.status(400).json({ ok: false, error: 'Для подарка не удалось определить стоимость.' });
+      }
+
+      const orderId = `KR-${randomUUID().slice(0, 8).toUpperCase()}`;
+      const giftEmoji = String(gift.sticker?.emoji || '');
+      const createdAt = new Intl.DateTimeFormat('ru-RU', {
+        timeZone: 'Europe/Chisinau',
+        dateStyle: 'short',
+        timeStyle: 'medium',
+      }).format(new Date());
+
+      const orderData = {
+        type: 'telegram_gift',
+        product: 'Telegram Gift',
+        giftId,
+        giftEmoji,
+        starCount,
+        recipientUsername,
+        paymentMethod: 'Telegram Stars — согласование с менеджером',
+      };
+
+      await supabaseRequest('orders', {
+        method: 'POST',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          id: orderId,
+          user_id: user.id,
+          status: 'awaiting_review',
+          order_data: orderData,
+        }),
+      });
+
+      const message = [
+        '🎁 <b>НОВАЯ ЗАЯВКА KRON — ПОДАРОК TELEGRAM</b>',
+        `<b>Номер:</b> <code>${escapeHtml(orderId)}</code>`,
+        `<b>Дата:</b> ${escapeHtml(createdAt)} (Кишинёв)`,
+        '',
+        '<b>Клиент:</b>',
+        formatUser(user),
+        '',
+        '<b>Подарок:</b>',
+        `ID: <code>${escapeHtml(giftId)}</code>`,
+        `Обозначение: ${escapeHtml(giftEmoji || 'Подарок Telegram')}`,
+        `<b>Стоимость:</b> ${starCount} Stars`,
+        `<b>Получатель:</b> @${escapeHtml(recipientUsername)}`,
+        '',
+        '<b>Оплата:</b> согласовать получение Telegram Stars с клиентом вручную.',
+        '<b>Статус:</b> Ожидает проверки менеджером.',
+      ].join('\n');
+
+      const sent = await sendTelegramMessage(botToken, chatId, message);
+
+      return res.status(200).json({
+        ok: true,
+        orderId,
+        status: 'awaiting_review',
+        giftId,
+        starCount,
+        notificationSent: Boolean(sent),
+      });
+    }
+
     if (body.action === 'get_status') {
       const orderId = String(body.orderId || '').slice(0, 40);
       if (!orderId) {
