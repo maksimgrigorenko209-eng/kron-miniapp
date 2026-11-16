@@ -643,6 +643,8 @@ export default async function handler(req, res) {
       const orderData = updated[0].order_data || {};
       const isGameOrder = orderData.type === 'game';
       const isSubscriptionOrder = orderData.type === 'subscription';
+      const isNftOrder = orderData.type === 'nft';
+      const isNftStars = isNftOrder && orderData.paymentMethod === 'stars';
 
       const message = [
         '🟡 <b>КЛИЕНТ СООБЩИЛ ОБ ОТПРАВКЕ</b>',
@@ -667,10 +669,25 @@ export default async function handler(req, res) {
             `Полная стоимость: ${escapeHtml(orderData.priceUSD ?? '—')} USD за год`,
           ] : [`Стоимость: ${escapeHtml(orderData.priceUSD ?? '—')} USD`]),
         ] : []),
+        ...(isNftOrder ? [
+          '<b>NFT-подарок:</b>',
+          `Коллекция: <b>${escapeHtml(orderData.collectionName || '—')}</b>`,
+          `Модель: <b>${escapeHtml(orderData.productName || '—')}</b>`,
+          `Получатель: @${escapeHtml(orderData.recipientUsername || '—')}`,
+          `Цена KRON: ${escapeHtml(orderData.priceRub ?? '—')} RUB`,
+          `Скидка: ${escapeHtml(orderData.discount ?? '—')}%`,
+          `Оплата: ${isNftStars ? `${escapeHtml(orderData.stars ?? '—')} Telegram Stars` : `${escapeHtml(orderData.cryptoAmount ?? '—')} ${escapeHtml(orderData.crypto || '')}`}`,
+          `Fragment для менеджера: ${escapeHtml(orderData.fragmentUrl || '—')}`,
+        ] : []),
         '<b>Оплата:</b>',
-        `К оплате: <b>${escapeHtml(orderData.cryptoAmount ?? orderData.total ?? '—')} ${escapeHtml(orderData.crypto || '')}</b>`,
-        `Сеть: ${escapeHtml(orderData.network || '—')}`,
-        `Адрес: <code>${escapeHtml(orderData.walletAddress || '—')}</code>`,
+        ...(isNftStars ? [
+          `К оплате: <b>${escapeHtml(orderData.stars ?? '—')} Telegram Stars</b>`,
+          'Получатель Stars: @KronSupport',
+        ] : [
+          `К оплате: <b>${escapeHtml(orderData.cryptoAmount ?? orderData.total ?? '—')} ${escapeHtml(orderData.crypto || '')}</b>`,
+          `Сеть: ${escapeHtml(orderData.network || '—')}`,
+          `Адрес: <code>${escapeHtml(orderData.walletAddress || '—')}</code>`,
+        ]),
         '',
         '<b>Статус:</b> Ожидает проверки менеджером.',
         '<b>Важно:</b> поступление средств ещё не подтверждено.',
@@ -685,6 +702,167 @@ export default async function handler(req, res) {
       });
     }
 
+
+
+    if (body.action === 'create_nft_order') {
+      const collectionSlug = String(body.collectionSlug || '').trim();
+      const modelSlug = String(body.modelSlug || '').trim();
+      const paymentMethod = String(body.paymentMethod || '').trim().toLowerCase();
+      const recipientUsername = String(body.recipientUsername || '').trim().replace(/^@/, '');
+
+      if (!collectionSlug || !modelSlug || !['stars', 'crypto'].includes(paymentMethod)) {
+        return res.status(400).json({ ok: false, error: 'Проверьте выбранный NFT и способ оплаты.' });
+      }
+      if (!/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(recipientUsername)) {
+        return res.status(400).json({ ok: false, error: 'Укажите корректный Telegram username получателя.' });
+      }
+
+      const starApi = 'https://starprice.net/api/v1/gifts';
+      const starIndexResponse = await fetch(starApi, { signal: AbortSignal.timeout(12000) });
+      if (!starIndexResponse.ok) return res.status(503).json({ ok: false, error: 'Не удалось проверить каталог NFT.' });
+      const starIndex = await starIndexResponse.json();
+      const collection = starIndex.gifts?.find(item => item.slug === collectionSlug);
+      if (!collection) return res.status(404).json({ ok: false, error: 'Коллекция NFT не найдена.' });
+
+      const collectionResponse = await fetch(`${starApi}/${encodeURIComponent(collectionSlug)}`, {
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!collectionResponse.ok) return res.status(503).json({ ok: false, error: 'Не удалось проверить наличие NFT.' });
+      const collectionData = await collectionResponse.json();
+      const model = (collectionData.models || []).find(item => item.slug === modelSlug);
+      const offer = model?.offers?.find(item => item.market === 'fragment');
+      if (!model || !offer) return res.status(409).json({ ok: false, error: 'Этот NFT больше не выставлен на Fragment.' });
+
+      const fragmentUrl = String(offer.url || '');
+      if (!fragmentUrl.startsWith('https://fragment.com/')) {
+        return res.status(503).json({ ok: false, error: 'Не удалось проверить ссылку на лот Fragment.' });
+      }
+
+      const gramRub = Number(starIndex.rates?.gram_rub);
+      const starRub = Number(starIndex.rates?.star_rub);
+      const fragmentRub = Number(offer.rub) || Number(offer.price) * gramRub;
+      if (!gramRub || !starRub || !Number.isFinite(fragmentRub) || fragmentRub <= 0) {
+        return res.status(503).json({ ok: false, error: 'Starprice вернул некорректную цену.' });
+      }
+
+      const lots = Number(offer.lots) || 0;
+      const rarity = Number(model.rarity_pct) || 0;
+      const discount = rarity <= 1 || lots <= 2 ? 0 : (rarity > 10 || lots >= 5 ? 5 : 2);
+      const priceRub = Math.round(fragmentRub * (1 - discount / 100));
+      const stars = Math.ceil(priceRub / starRub);
+
+      const usdResponse = await fetch('https://www.cbr-xml-daily.ru/daily_json.js', {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!usdResponse.ok) return res.status(503).json({ ok: false, error: 'Не удалось получить курс RUB/USD.' });
+      const usdData = await usdResponse.json();
+      const usdRub = Number(usdData.Valute?.USD?.Value);
+      if (!Number.isFinite(usdRub) || usdRub <= 0) {
+        return res.status(503).json({ ok: false, error: 'Некорректный курс RUB/USD.' });
+      }
+      const priceUSD = Number((priceRub / usdRub).toFixed(2));
+
+      let crypto = '';
+      let network = '';
+      let walletAddress = '';
+      let cryptoAmount = 0;
+      let marketRate = 1;
+
+      if (paymentMethod === 'crypto') {
+        crypto = String(body.crypto || '').trim().toUpperCase();
+        network = String(body.network || '').trim();
+        walletAddress = walletAddresses[crypto]?.[network] || '';
+        if (!walletAddress) return res.status(400).json({ ok: false, error: 'Выбрана неподдерживаемая сеть оплаты.' });
+
+        if (crypto === 'BTC' || crypto === 'ETH') {
+          const rateResponse = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${crypto}USDT`, {
+            signal: AbortSignal.timeout(8000),
+          });
+          if (!rateResponse.ok) return res.status(503).json({ ok: false, error: 'Не удалось получить курс криптовалюты.' });
+          const rateData = await rateResponse.json();
+          marketRate = Number(rateData.price);
+          if (!Number.isFinite(marketRate) || marketRate <= 0) {
+            return res.status(503).json({ ok: false, error: 'Некорректный курс криптовалюты.' });
+          }
+        } else if (crypto !== 'USDT' && crypto !== 'USDC') {
+          return res.status(400).json({ ok: false, error: 'Неподдерживаемая криптовалюта.' });
+        }
+
+        const precision = crypto === 'BTC' || crypto === 'ETH' ? 8 : 6;
+        cryptoAmount = Number((priceUSD / marketRate).toFixed(precision));
+      }
+
+      const orderId = `KR-${randomUUID().slice(0, 8).toUpperCase()}`;
+      const createdAt = new Intl.DateTimeFormat('ru-RU', {
+        timeZone: 'Europe/Chisinau', dateStyle: 'short', timeStyle: 'medium',
+      }).format(new Date());
+
+      const orderData = {
+        type: 'nft',
+        collectionSlug, collectionName: collection.name,
+        modelSlug, productName: model.name,
+        recipientUsername, fragmentUrl,
+        fragmentPriceRub: Math.round(fragmentRub),
+        priceRub, priceUSD, discount, stars,
+        paymentMethod, crypto, network, walletAddress,
+        cryptoAmount, marketRate, usdRub,
+      };
+
+      await supabaseRequest('orders', {
+        method: 'POST',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          id: orderId, user_id: user.id,
+          status: 'awaiting_payment', order_data: orderData,
+        }),
+      });
+
+      const paymentLines = paymentMethod === 'stars'
+        ? [`К оплате: <b>${stars} Telegram Stars</b>`, 'Получатель Stars: @KronSupport']
+        : [
+            `К оплате: <b>${cryptoAmount} ${escapeHtml(crypto)}</b>`,
+            `Сеть: ${escapeHtml(network)}`,
+            `Адрес: <code>${escapeHtml(walletAddress)}</code>`,
+          ];
+
+      const message = [
+        '💎 <b>НОВАЯ NFT-ЗАЯВКА KRON</b>',
+        `<b>Номер:</b> <code>${orderId}</code>`,
+        `<b>Дата:</b> ${escapeHtml(createdAt)} (Кишинёв)`,
+        '',
+        '<b>Клиент:</b>',
+        formatUser(user),
+        `<b>Получатель:</b> @${escapeHtml(recipientUsername)}`,
+        '',
+        `<b>NFT:</b> ${escapeHtml(collection.name)} — <b>${escapeHtml(model.name)}</b>`,
+        `Цена Fragment: ${Math.round(fragmentRub).toLocaleString('ru-RU')} RUB`,
+        `Скидка KRON: ${discount}%`,
+        `Цена KRON: <b>${priceRub.toLocaleString('ru-RU')} RUB</b>`,
+        `Эквивалент: ${priceUSD.toFixed(2)} USD`,
+        '',
+        '<b>Оплата:</b>',
+        ...paymentLines,
+        '',
+        `<b>Лот Fragment для менеджера:</b> ${escapeHtml(fragmentUrl)}`,
+        '',
+        'Статус: <b>Ожидает оплаты</b>',
+        paymentMethod === 'stars'
+          ? 'Клиент отправляет Stars вручную на @KronSupport.'
+          : 'После оплаты менеджер вручную приобретает NFT на Fragment.',
+      ].join('\n');
+
+      const sent = await sendTelegramMessage(botToken, chatId, message);
+
+      return res.status(200).json({
+        ok: true, orderId, status: 'awaiting_payment',
+        paymentMethod, productName: model.name,
+        priceRub, priceUSD, discount, stars,
+        ...(paymentMethod === 'crypto' ? {
+          crypto, network, cryptoAmount, walletAddress, marketRate,
+        } : {}),
+        notificationSent: Boolean(sent),
+      });
+    }
 
     if (body.action === 'create_telegram_gift_request') {
       const giftId = String(body.giftId || '').trim();

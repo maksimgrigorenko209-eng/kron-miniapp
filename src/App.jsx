@@ -194,6 +194,15 @@ function App() {
   const [telegramGiftSubmitting, setTelegramGiftSubmitting] = useState(false);
   const [telegramGiftError, setTelegramGiftError] = useState('');
   const [telegramGiftOrderId, setTelegramGiftOrderId] = useState('');
+  const [nftGifts, setNftGifts] = useState([]);
+  const [nftGiftsLoading, setNftGiftsLoading] = useState(false);
+  const [nftGiftsError, setNftGiftsError] = useState('');
+  const [selectedNftGift, setSelectedNftGift] = useState(null);
+  const [nftVisibleCount, setNftVisibleCount] = useState(16);
+  const [nftPaymentMethod, setNftPaymentMethod] = useState('crypto');
+  const [nftPayment, setNftPayment] = useState(null);
+  const [nftRecipientUsername, setNftRecipientUsername] = useState('');
+
 
 
   useEffect(() => {
@@ -239,6 +248,29 @@ function App() {
     };
   }, [page, donateCategory, telegramGiftsReload]);
 
+  useEffect(() => {
+    if (page !== 'Донат в игры' || donateCategory !== 'nft') return;
+    let cancelled = false;
+    const loadNftGifts = async () => {
+      setNftGiftsLoading(true);
+      setNftGiftsError('');
+      try {
+        const response = await fetch('/api/nft-gifts');
+        const result = await response.json();
+        if (!response.ok || !result.ok) {
+          throw new Error(result.error || 'Не удалось загрузить NFT-подарки.');
+        }
+        if (!cancelled) setNftGifts(Array.isArray(result.gifts) ? result.gifts : []);
+      } catch (error) {
+        if (!cancelled) setNftGiftsError(error.message || 'Ошибка загрузки NFT-подарков.');
+      } finally {
+        if (!cancelled) setNftGiftsLoading(false);
+      }
+    };
+    loadNftGifts();
+    return () => { cancelled = true; };
+  }, [page, donateCategory]);
+
   const sections = [
     { icon: '💱', title: 'Курс валют', desc: 'Актуальные курсы валют' },
     { icon: '🔄', title: 'Обмен', desc: 'Обменные операции' },
@@ -264,7 +296,9 @@ function App() {
     ? Number(gamePayment?.cryptoAmount ?? gamePayment?.priceUSD ?? 0)
     : paymentSource === 'subscription'
       ? Number(subscriptionPayment?.cryptoAmount ?? 0)
-      : totalAmount;
+      : paymentSource === 'nft'
+        ? Number(nftPayment?.cryptoAmount ?? 0)
+        : totalAmount;
 
   const formatNumber = (value) =>
     new Intl.NumberFormat('ru-RU', {
@@ -399,6 +433,56 @@ function App() {
       setTelegramGiftError(error.message || 'Не удалось отправить заявку.');
     } finally {
       setTelegramGiftSubmitting(false);
+    }
+  };
+
+  const handleCreateNftOrder = async () => {
+    if (!selectedNftGift) {
+      setOrderError('Сначала выберите NFT-подарок.');
+      return;
+    }
+
+    const username = nftRecipientUsername.trim().replace(/^@/, '');
+    if (!/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(username)) {
+      setOrderError('Укажите корректный Telegram username получателя.');
+      return;
+    }
+
+    if (nftPaymentMethod === 'crypto' && !addressesByCrypto[selectedCurrency]?.[selectedNetwork]) {
+      setOrderError('Выберите доступную сеть оплаты.');
+      return;
+    }
+
+    setOrderLoading(true);
+    setOrderError('');
+
+    try {
+      const result = await sendOrderAction('create_nft_order', {
+        collectionSlug: selectedNftGift.collectionSlug,
+        modelSlug: selectedNftGift.modelSlug,
+        paymentMethod: nftPaymentMethod,
+        recipientUsername: username,
+        ...(nftPaymentMethod === 'crypto' ? {
+          crypto: selectedCurrency,
+          network: selectedNetwork,
+        } : {}),
+      });
+
+      setOrderId(result.orderId);
+      localStorage.setItem('kronOrderId', result.orderId);
+      setOrderStatus('awaiting_payment');
+      setPaymentSource('nft');
+      setNftPayment(result);
+
+      if (nftPaymentMethod === 'crypto') {
+        setPage('Криптооплата');
+      } else {
+        setPage('nft-stars-payment');
+      }
+    } catch (error) {
+      setOrderError(error.message || 'Не удалось создать NFT-заказ.');
+    } finally {
+      setOrderLoading(false);
     }
   };
 
@@ -767,10 +851,12 @@ function App() {
           <button
             className="back"
             onClick={() => setPage(
-              page === 'game-detail' || page === 'subscription-detail' ? 'Донат в игры' :
+              page === 'game-detail' || page === 'subscription-detail' || page === 'nft-detail' ? 'Донат в игры' :
               page === 'Донат в игры' ? 'home' :
               page === 'Статус' || page === 'Админ-панель' ? 'home' :
+              page === 'nft-stars-payment' ? 'nft-detail' :
               page === 'Криптооплата' && paymentSource === 'subscription' ? 'subscription-detail' :
+              page === 'Криптооплата' && paymentSource === 'nft' ? 'nft-detail' :
               page === 'Криптооплата' ? 'Оплата' :
               page === 'Оплата' ? 'Курс валют' : 'home'
             )}
@@ -779,7 +865,7 @@ function App() {
           </button>
 
           <p className="eyebrow">РАЗДЕЛ KRON</p>
-          <h1>{page === 'game-detail' ? selectedGame?.name : page === 'subscription-detail' ? selectedSubscription?.name : page}</h1>
+          <h1>{page === 'game-detail' ? selectedGame?.name : page === 'subscription-detail' ? selectedSubscription?.name : page === 'nft-detail' ? selectedNftGift?.name : page === 'nft-stars-payment' ? 'Оплата Stars' : page}</h1>
 
           {page === 'Донат в игры' && (
             <section className="donate-hub">
@@ -829,6 +915,20 @@ function App() {
                     </svg>
                   </span>
                   <span className="donate-category-label">Telegram</span>
+                </button>
+                <button
+                  type="button"
+                  className={`donate-category-button ${donateCategory === 'nft' ? 'active' : ''}`}
+                  onClick={() => { setDonateCategory('nft'); setDonateSearch(''); }}
+                >
+                  <span className="donate-category-orb">
+                    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                      <path d="m24 5 17 9.5v19L24 43 7 33.5v-19L24 5Z" fill="rgba(91,224,157,.12)" stroke="currentColor" strokeWidth="1.8"/>
+                      <path d="m7.5 14.5 16.5 9 16.5-9M24 24v19" stroke="currentColor" strokeWidth="1.6"/>
+                      <path d="m17 11 17 10" stroke="currentColor" strokeWidth="1.4"/>
+                    </svg>
+                  </span>
+                  <span className="donate-category-label">NFT-подарки</span>
                 </button>
               </div>
 
@@ -927,6 +1027,65 @@ function App() {
                   <div className="subscriptions-empty">
                     Ничего не найдено. Попробуйте изменить запрос.
                   </div>
+                )}
+              </section>
+            ) : donateCategory === 'nft' ? (
+              <section className="nft-gifts-catalog">
+                <div className="telegram-gifts-heading">
+                  <div>
+                    <h2>NFT-подарки</h2>
+                    <p>Коллекционные подарки Telegram с актуальными предложениями Fragment.</p>
+                  </div>
+                  <span className="telegram-gifts-badge">NFT</span>
+                </div>
+
+                {nftGiftsLoading ? (
+                  <div className="subscriptions-empty">Загружаем NFT-подарки…</div>
+                ) : nftGiftsError ? (
+                  <div className="subscriptions-empty">
+                    <p>{nftGiftsError}</p>
+                    <button type="button" className="telegram-gifts-retry"
+                      onClick={() => setDonateCategory('games') || setTimeout(() => setDonateCategory('nft'), 0)}>
+                      Повторить загрузку
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                  <div className="nft-gifts-grid">
+                    {nftGifts.filter((gift) => {
+                      const query = donateSearch.trim().toLowerCase();
+                      return !query || [gift.name, gift.collectionName, gift.modelSlug]
+                        .some((value) => String(value ?? '').toLowerCase().includes(query));
+                    }).slice(0, nftVisibleCount).map((gift) => (
+                      <button type="button" className={`nft-gift-card ${selectedNftGift?.id === gift.id ? "selected" : ""}`} key={gift.id}
+                        onClick={() => { setSelectedNftGift(gift); setOrderError(''); setPage('nft-detail'); }}>
+                        <span className="nft-gift-emoji-bg" aria-hidden="true">🎁　✨　⭐　💎</span>
+                        <span className="nft-gift-image">
+                          {gift.image ? <img src={gift.image} alt="" loading="lazy" /> : <span>💎</span>}
+                        </span>
+                        <strong>{gift.name}</strong>
+                        <span className="nft-gift-collection">{gift.collectionName}</span>
+                        <span className="nft-gift-price">${gift.priceUSD.toFixed(2)}</span>
+                        <span className="nft-gift-stars">⭐ {gift.stars} Stars</span>
+                        <span className="nft-gift-discount">Скидка {gift.discount}%</span>
+                      </button>
+                    ))}
+                  </div>
+                  {nftGifts.filter((gift) => {
+                    const query = donateSearch.trim().toLowerCase();
+                    return query.length === 0 || [gift.name, gift.collectionName, gift.modelSlug]
+                      .some((value) => String(value ?? '').toLowerCase().includes(query));
+                  }).length > nftVisibleCount && (
+                    <button type="button" className="nft-load-more"
+                      onClick={() => setNftVisibleCount((count) => count + 16)}>
+                      Показать ещё подарки
+                    </button>
+                  )}
+                  </>
+                )}
+
+                {!nftGiftsLoading && !nftGiftsError && nftGifts.length === 0 && (
+                  <div className="subscriptions-empty">Пока нет NFT с доступными предложениями Fragment.</div>
                 )}
               </section>
             ) : (
@@ -1278,6 +1437,99 @@ function App() {
             ) : (
               <p className="subtitle">Выберите игру в каталоге.</p>
             )
+          ) : page === 'nft-detail' ? (
+            selectedNftGift ? (
+              <section className="nft-detail-page">
+                <div className="nft-detail-card">
+                  {selectedNftGift.image && (
+                    <img className="nft-detail-image" src={selectedNftGift.image} alt={selectedNftGift.name} />
+                  )}
+                  <div className="nft-detail-info">
+                    <p className="eyebrow">NFT-ПОДАРОК</p>
+                    <h2>{selectedNftGift.name}</h2>
+                    <span>{selectedNftGift.collectionName}</span>
+                    <strong>${selectedNftGift.priceUSD.toFixed(2)}</strong>
+                    <small>{formatNumber(selectedNftGift.stars)} Telegram Stars</small>
+                    <small>Скидка KRON: {selectedNftGift.discount}%</small>
+                  </div>
+                </div>
+
+                <div className="subscription-account-field">
+                  <label htmlFor="nft-recipient-username">Username получателя</label>
+                  <input
+                    id="nft-recipient-username"
+                    type="text"
+                    value={nftRecipientUsername}
+                    onChange={(event) => {
+                      setNftRecipientUsername(event.target.value);
+                      setOrderError('');
+                    }}
+                    placeholder="@username"
+                    maxLength={33}
+                    autoComplete="off"
+                  />
+                  <span>Укажите Telegram-аккаунт, на который нужно отправить подарок.</span>
+                </div>
+
+                <p className="field-label">Способ оплаты</p>
+                <div className="payment-methods">
+                  <button type="button" className={`payment-method ${nftPaymentMethod === 'stars' ? 'active' : ''}`} onClick={() => setNftPaymentMethod('stars')}>Telegram Stars</button>
+                  <button type="button" className={`payment-method ${nftPaymentMethod === 'crypto' ? 'active' : ''}`} onClick={() => setNftPaymentMethod('crypto')}>Криптовалюта</button>
+                </div>
+
+                {nftPaymentMethod === 'stars' ? (
+                  <div className="payment-summary nft-payment-hint">
+                    <strong>{formatNumber(selectedNftGift.stars)} ⭐</strong>
+                    <span>После оформления заявки отправьте Stars менеджеру KRON на @KronSupport. Покупка и отправка NFT выполняются вручную после проверки оплаты.</span>
+                  </div>
+                ) : (
+                  <>
+                    <p className="field-label">Выберите криптовалюту</p>
+                    <div className="currency-select">
+                      {cryptoCurrencies.map((currency) => (
+                        <button
+                          type="button"
+                          key={currency.id}
+                          className={`currency-option ${selectedCurrency === currency.id ? 'active' : ''}`}
+                          onClick={() => {
+                            setSelectedCurrency(currency.id);
+                            setSelectedNetwork(networksByCrypto[currency.id][0]);
+                          }}
+                        >
+                          {currency.id}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="field-label">Сеть оплаты</p>
+                    <div className="payment-methods">
+                      {networksByCrypto[selectedCurrency].map((network) => (
+                        <button
+                          type="button"
+                          key={network}
+                          className={`payment-method ${selectedNetwork === network ? 'active' : ''}`}
+                          onClick={() => setSelectedNetwork(network)}
+                        >
+                          {network}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="calculator-note">Точная сумма в {selectedCurrency} будет рассчитана по актуальному курсу при создании заявки.</p>
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={orderLoading || !nftRecipientUsername.trim()}
+                  onClick={handleCreateNftOrder}
+                >
+                  {orderLoading ? 'Создаём заявку...' : 'Перейти к оплате'}
+                </button>
+                {orderError && <p className="calculator-note">{orderError}</p>}
+              </section>
+            ) : (
+              <p className="subtitle">Сначала выберите NFT-подарок в каталоге.</p>
+            )
           ) : page === 'subscription-detail' ? (
             selectedSubscription ? (
               <section className="subscription-detail">
@@ -1622,6 +1874,32 @@ function App() {
                 }
               >
                 {orderLoading ? 'Создаём заявку...' : 'Продолжить'}
+              </button>
+              {orderError && <p className="calculator-note">{orderError}</p>}
+            </div>
+          ) : page === 'nft-stars-payment' ? (
+            <div className="payment-page">
+              <div className="payment-order-label">
+                <strong>{selectedNftGift?.name || 'NFT-подарок'}</strong>
+                <span>{selectedNftGift?.collectionName || ''}</span>
+              </div>
+              <p className="field-label">Сумма к оплате</p>
+              <div className="payment-summary">
+                <strong>{formatNumber(nftPayment?.stars || selectedNftGift?.stars || 0)} ⭐</strong>
+                <span>Telegram Stars</span>
+              </div>
+              <div className="calculator-note">
+                Отправьте указанное количество Telegram Stars аккаунту поддержки KRON:
+                <strong> @KronSupport</strong>.
+                После отправки нажмите кнопку ниже. Менеджер проверит поступление Stars,
+                приобретёт NFT на Fragment и отправит подарок получателю.
+              </div>
+              <button
+                className="primary-button"
+                onClick={handleMarkSent}
+                disabled={orderLoading}
+              >
+                {orderLoading ? 'Отправляем...' : 'Я отправил Stars'}
               </button>
               {orderError && <p className="calculator-note">{orderError}</p>}
             </div>
