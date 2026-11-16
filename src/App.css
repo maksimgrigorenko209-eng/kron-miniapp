@@ -3711,3 +3711,40 @@ button.game-category-card {
   position: relative;
   z-index: 1;
 }
+
+/* KRON NFT — four gifts per row on mobile */
+@media (max-width: 700px) {
+  .nft-gifts-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .nft-gift-card {
+    min-width: 0;
+    padding: 7px 4px 9px;
+    border-radius: 12px;
+  }
+
+  .nft-gift-image img {
+    padding: 4px;
+  }
+
+  .nft-gift-card strong {
+    font-size: 10px;
+  }
+
+  .nft-gift-collection,
+  .nft-gift-stars {
+    font-size: 8px;
+  }
+
+  .nft-gift-price {
+    font-size: 10px;
+    margin-top: 7px;
+  }
+
+  .nft-gift-discount {
+    font-size: 8px;
+    padding: 3px 4px;
+  }
+}
