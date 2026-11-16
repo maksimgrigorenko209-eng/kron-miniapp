@@ -718,8 +718,9 @@ export default async function handler(req, res) {
       }
 
       const starCount = Number(gift.star_count);
+      const clientStarCount = starCount - (starCount < 50 ? 5 : 10);
 
-      if (!Number.isFinite(starCount) || starCount <= 0) {
+      if (!Number.isFinite(starCount) || starCount <= 0 || clientStarCount <= 0) {
         return res.status(400).json({ ok: false, error: 'Для подарка не удалось определить стоимость.' });
       }
 
@@ -737,6 +738,7 @@ export default async function handler(req, res) {
         giftId,
         giftEmoji,
         starCount,
+        clientStarCount,
         recipientUsername,
         paymentMethod: 'Telegram Stars — согласование с менеджером',
       };
@@ -763,7 +765,8 @@ export default async function handler(req, res) {
         '<b>Подарок:</b>',
         `ID: <code>${escapeHtml(giftId)}</code>`,
         `Обозначение: ${escapeHtml(giftEmoji || 'Подарок Telegram')}`,
-        `<b>Стоимость:</b> ${starCount} Stars`,
+        `<b>Цена KRON:</b> ${clientStarCount} Stars`,
+        `<b>Официальная цена Telegram:</b> ${starCount} Stars`,
         `<b>Получатель:</b> @${escapeHtml(recipientUsername)}`,
         '',
         '<b>Оплата:</b> согласовать получение Telegram Stars с клиентом вручную.',
@@ -778,6 +781,7 @@ export default async function handler(req, res) {
         status: 'awaiting_review',
         giftId,
         starCount,
+        clientStarCount,
         notificationSent: Boolean(sent),
       });
     }

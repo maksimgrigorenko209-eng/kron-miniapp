@@ -986,7 +986,7 @@ function App() {
                               {gift.emoji || '🎁'} Подарок Telegram
                             </span>
                             <strong className="telegram-gift-price">
-                              ⭐ {gift.starCount} Stars
+                              ⭐ {gift.starCount - (gift.starCount < 50 ? 5 : 10)} Stars
                             </strong>
                             {Number.isFinite(Number(gift.remainingCount)) && gift.remainingCount !== null && (
                               <span className="telegram-gift-stock">
@@ -1024,7 +1024,7 @@ function App() {
                       <span>{selectedTelegramGift.emoji || '🎁'}</span>
                       <div>
                         <strong>Выбран подарок</strong>
-                        <p>⭐ {selectedTelegramGift.starCount} Telegram Stars</p>
+                        <p>⭐ {selectedTelegramGift.starCount - (selectedTelegramGift.starCount < 50 ? 5 : 10)} Telegram Stars</p>
                       </div>
                     </div>
 
