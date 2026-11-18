@@ -2798,9 +2798,24 @@ button.game-category-card {
   flex: 0 0 37px;
   display: grid;
   place-items: center;
+  overflow: hidden;
   border: 1px solid rgba(112, 226, 172, .24);
   border-radius: 11px;
   background: linear-gradient(145deg, rgba(0, 210, 137, .19), rgba(15, 43, 29, .8));
+}
+
+.subscription-monogram img {
+  width: 25px;
+  height: 25px;
+  object-fit: contain;
+  border-radius: 5px;
+}
+
+.subscription-monogram-fallback {
+  display: none;
+  width: 100%;
+  height: 100%;
+  place-items: center;
   color: #9af0bf;
   font-size: 12px;
   font-weight: 800;
@@ -3746,5 +3761,263 @@ button.game-category-card {
   .nft-gift-discount {
     font-size: 8px;
     padding: 3px 4px;
+  }
+}
+
+/* KRON Telegram Premium and Stars */
+.telegram-product-cards {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.telegram-product-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 17px;
+  border: 1px solid rgba(80, 220, 155, 0.16);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(20, 38, 30, 0.96), rgba(12, 19, 16, 0.98));
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.telegram-product-card:active {
+  border-color: #35d995;
+  transform: scale(0.99);
+}
+
+.telegram-product-card-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 13px;
+  background: rgba(53, 217, 149, 0.12);
+  font-size: 23px;
+}
+
+.telegram-product-card-info {
+  display: grid;
+  gap: 5px;
+  flex: 1;
+}
+
+.telegram-product-card-info strong {
+  font-size: 15px;
+}
+
+.telegram-product-card-info small,
+.telegram-product-note {
+  color: #98a79e;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.telegram-product-card-arrow {
+  color: #35d995;
+  font-size: 25px;
+}
+
+.telegram-product-note {
+  margin: 2px 3px 0;
+}
+
+.telegram-product-detail {
+  display: grid;
+  gap: 18px;
+}
+
+.telegram-product-detail .subscription-plans {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.telegram-product-detail .subscription-plan.selected {
+  border-color: #35d995;
+  background: rgba(53, 217, 149, 0.09);
+}
+
+.telegram-payment-choice {
+  display: grid;
+  gap: 10px;
+}
+
+.telegram-product-total {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid rgba(53, 217, 149, 0.2);
+  border-radius: 14px;
+  background: rgba(53, 217, 149, 0.06);
+}
+
+.telegram-product-total span,
+.telegram-product-total small {
+  color: #98a79e;
+  font-size: 12px;
+}
+
+.telegram-product-total strong {
+  color: #35d995;
+  font-size: 24px;
+}
+
+
+
+/* KRON — оформление Steam Top Up */
+.steam-topup-page .steam-payment-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 18px 0 24px;
+  padding: 16px;
+  border: 1px solid rgba(85, 223, 178, 0.16);
+  border-radius: 15px;
+  background: linear-gradient(145deg, #101b15, #0c110e);
+}
+
+.steam-summary-row,
+.steam-summary-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.steam-summary-row {
+  padding: 7px 0;
+}
+
+.steam-summary-row span {
+  color: #9aa99f;
+  font-size: 13px;
+}
+
+.steam-summary-row strong {
+  color: #edf4ef;
+  font-size: 14px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.steam-summary-row small {
+  color: #55dcb0;
+  font-size: 11px;
+}
+
+.steam-summary-total {
+  margin-top: 9px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(157, 190, 171, 0.16);
+}
+
+.steam-summary-total span {
+  color: #f2f6f3;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.steam-summary-total strong {
+  color: #55dfb2;
+  font-size: 21px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.steam-choice-section {
+  margin: 22px 0;
+}
+
+.steam-choice-title {
+  display: block;
+  margin-bottom: 11px;
+  color: #dce8df;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.steam-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.steam-choice,
+.steam-network-choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 1px solid rgba(157, 190, 171, 0.14);
+  border-radius: 12px;
+  background: #101812;
+  color: #c0cec5;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, color .18s ease;
+}
+
+.steam-choice.active,
+.steam-network-choice.active {
+  border-color: rgba(0, 214, 154, 0.7);
+  background: rgba(0, 214, 154, 0.11);
+  color: #55e3b5;
+  box-shadow: inset 0 0 0 1px rgba(0, 214, 154, 0.08);
+}
+
+.steam-choice-symbol {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 9px;
+  background: rgba(85, 223, 178, 0.1);
+  color: #55dfb2;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.steam-choice-check {
+  margin-left: auto;
+  color: #55dfb2;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.steam-network-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.steam-network-choice {
+  min-height: 42px;
+  padding: 10px 13px;
+}
+
+.steam-network-choice .steam-choice-check {
+  margin-left: 3px;
+}
+
+@media (max-width: 380px) {
+  .steam-choice {
+    padding: 10px;
+    gap: 7px;
+  }
+
+  .steam-summary-total strong {
+    font-size: 19px;
   }
 }

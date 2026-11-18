@@ -19,7 +19,10 @@ export const gameCatalog = {
         { id:'rp-upgraded-1-100', name:'Улучшенный Royal Pass · уровни 1–100', price:28.00 },
       ] },
     ],
-    accountFields: [{ key:'playerId', label:'PUBG Mobile Player ID', placeholder:'Введите игровой ID', required:true }],
+    accountFields: [
+      { key:'playerId', label:'Игровой ID', placeholder:'Введите игровой ID', required:true },
+      { key:'username', label:'Username', placeholder:'Введите игровой ник', required:true }
+    ],
   },
 
   'free-fire': {
@@ -31,7 +34,10 @@ export const gameCatalog = {
       {id:'ff-2180',name:'2 180 алмазов',price:16.99},
       {id:'ff-5600',name:'5 600 алмазов',price:46.99},
     ]}],
-    accountFields:[{key:'playerId',label:'Free Fire Player ID',placeholder:'Введите игровой ID',required:true}],
+    accountFields: [
+      { key:'playerId', label:'Игровой ID', placeholder:'Введите игровой ID', required:true },
+      { key:'username', label:'Username', placeholder:'Введите игровой ник', required:true }
+    ],
   },
 
   'mobile-legends': {
@@ -46,9 +52,10 @@ export const gameCatalog = {
       {id:'ml-4165',name:'4 165 алмазов',price:66.99},
       {id:'ml-6000',name:'6 000 алмазов',price:96.99},
     ]}],
-    accountFields:[
-      {key:'userId',label:'User ID',placeholder:'Введите User ID',required:true},
-      {key:'zoneId',label:'Zone ID',placeholder:'Введите Zone ID',required:true},
+    accountFields: [
+      { key:'userId', label:'Игровой ID (User ID)', placeholder:'Введите User ID', required:true },
+      { key:'username', label:'Username', placeholder:'Введите игровой ник', required:true },
+      { key:'zoneId', label:'Zone ID', placeholder:'Введите Zone ID', required:true }
     ],
   },
 
@@ -59,7 +66,10 @@ export const gameCatalog = {
       {id:'roblox-50',name:'Подарочная карта Roblox $50',price:50},
       {id:'roblox-100',name:'Подарочная карта Roblox $100',price:100},
     ]}],
-    accountFields:[{key:'username',label:'Roblox username',placeholder:'Введите имя пользователя Roblox',required:true}],
+    accountFields: [
+      { key:'playerId', label:'Игровой ID', placeholder:'Введите игровой ID', required:true },
+      { key:'username', label:'Username', placeholder:'Введите имя пользователя Roblox', required:true }
+    ],
     fulfillmentNote:'Robux выдаются через подарочную карту Roblox. Заказ обрабатывается менеджером вручную.',
   },
 
@@ -70,7 +80,10 @@ export const gameCatalog = {
       {id:'standoff-1000',name:'1 000 Gold',price:11.99},
       {id:'standoff-3000',name:'3 000 Gold',price:31.99},
     ]}],
-    accountFields:[],
+    accountFields: [
+      { key:'playerId', label:'Игровой ID', placeholder:'Введите игровой ID', required:true },
+      { key:'username', label:'Username', placeholder:'Введите игровой ник', required:true }
+    ],
     fulfillmentNote:'После оформления менеджер уточнит необходимые данные аккаунта.',
   },
 
@@ -88,7 +101,10 @@ export const gameCatalog = {
         {id:'brawl-pass-plus',name:'Brawl Pass Plus',price:5.99},
       ]},
     ],
-    accountFields:[],
+    accountFields: [
+      { key:'playerId', label:'Игровой ID', placeholder:'Введите игровой ID', required:true },
+      { key:'username', label:'Username', placeholder:'Введите игровой ник', required:true }
+    ],
     fulfillmentNote:'После оформления менеджер уточнит необходимые данные аккаунта.',
   },
 
@@ -102,7 +118,10 @@ export const gameCatalog = {
       {id:'cod-5400',name:'5 400 CP',price:29.49},
       {id:'cod-11600',name:'11 600 CP',price:96.99},
     ]}],
-    accountFields:[],
+    accountFields: [
+      { key:'playerId', label:'Игровой ID', placeholder:'Введите игровой ID', required:true },
+      { key:'username', label:'Username', placeholder:'Введите игровой ник', required:true }
+    ],
     fulfillmentNote:'После оформления менеджер уточнит необходимые данные аккаунта.',
   },
 
@@ -121,9 +140,10 @@ export const gameCatalog = {
         {id:'genshin-hymn',name:'Боевой пропуск Gnostic Hymn',price:6.99},
       ]},
     ],
-    accountFields:[
-      {key:'uid',label:'UID',placeholder:'Введите UID',required:true},
-      {key:'server',label:'Сервер',placeholder:'Выберите или укажите сервер',required:true},
+    accountFields: [
+      { key:'uid', label:'Игровой ID (UID)', placeholder:'Введите UID', required:true },
+      { key:'username', label:'Username', placeholder:'Введите игровой ник', required:true },
+      { key:'server', label:'Сервер', placeholder:'Выберите или укажите сервер', required:true }
     ],
   },
 
@@ -136,7 +156,10 @@ export const gameCatalog = {
       {id:'coc-6500',name:'6 500 гемов',price:46.99},
       {id:'coc-14000',name:'14 000 гемов',price:96.99},
     ]}],
-    accountFields:[],
+    accountFields: [
+      { key:'playerId', label:'Игровой ID', placeholder:'Введите игровой ID', required:true },
+      { key:'username', label:'Username', placeholder:'Введите игровой ник', required:true }
+    ],
     fulfillmentNote:'После оформления менеджер уточнит необходимые данные аккаунта.',
   },
 
@@ -150,7 +173,10 @@ export const gameCatalog = {
       {id:'fc-5750',name:'5 750 FC Points',price:46.99},
       {id:'fc-12000',name:'12 000 FC Points',price:96.99},
     ]}],
-    accountFields:[],
+    accountFields: [
+      { key:'playerId', label:'Игровой ID', placeholder:'Введите игровой ID', required:true },
+      { key:'username', label:'Username', placeholder:'Введите игровой ник', required:true }
+    ],
     fulfillmentNote:'После оформления менеджер уточнит необходимые данные аккаунта.',
   },
 
@@ -168,9 +194,10 @@ export const gameCatalog = {
         {id:'hsr-pass',name:'Express Supply Pass',price:1.99},
       ]},
     ],
-    accountFields:[
-      {key:'uid',label:'UID',placeholder:'Введите UID',required:true},
-      {key:'server',label:'Сервер',placeholder:'Выберите или укажите сервер',required:true},
+    accountFields: [
+      { key:'uid', label:'Игровой ID (UID)', placeholder:'Введите UID', required:true },
+      { key:'username', label:'Username', placeholder:'Введите игровой ник', required:true },
+      { key:'server', label:'Сервер', placeholder:'Выберите или укажите сервер', required:true }
     ],
   },
 
@@ -185,7 +212,10 @@ export const gameCatalog = {
       {id:'arena-13640',name:'13 640 Bonds',price:164.79},
       {id:'arena-20460',name:'20 460 Bonds',price:248.69},
     ]}],
-    accountFields:[],
+    accountFields: [
+      { key:'playerId', label:'Игровой ID', placeholder:'Введите игровой ID', required:true },
+      { key:'username', label:'Username', placeholder:'Введите игровой ник', required:true }
+    ],
     fulfillmentNote:'После оформления менеджер уточнит необходимые данные аккаунта.',
   },
 };

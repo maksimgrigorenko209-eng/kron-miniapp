@@ -3,6 +3,48 @@ import { useState, useEffect } from 'react';
 import './App.css';
 import { gameCatalog, findGameProduct } from '../gameCatalog.js';
 import { subscriptionGroups, findSubscriptionPlan } from '../subscriptionCatalog.js';
+import { telegramPremiumPlans, telegramStarsPackages, getTelegramKronPrice } from '../telegramProductCatalog.js';
+
+const serviceLogoDomains = {
+  chatgpt: 'chatgpt.com',
+  claude: 'claude.ai',
+  'google-ai': 'gemini.google.com',
+  midjourney: 'midjourney.com',
+  perplexity: 'perplexity.ai',
+  grok: 'x.com',
+  cursor: 'cursor.com',
+  elevenlabs: 'elevenlabs.io',
+  netflix: 'netflix.com',
+  disney: 'disneyplus.com',
+  'prime-video': 'primevideo.com',
+  hbo: 'max.com',
+  'apple-tv': 'tv.apple.com',
+  crunchyroll: 'crunchyroll.com',
+  spotify: 'spotify.com',
+  'youtube-premium': 'youtube.com',
+  'youtube-music': 'music.youtube.com',
+  'apple-music': 'music.apple.com',
+  deezer: 'deezer.com',
+  tidal: 'tidal.com',
+  'microsoft-365': 'microsoft.com',
+  canva: 'canva.com',
+  adobe: 'adobe.com',
+  notion: 'notion.so',
+  grammarly: 'grammarly.com',
+  zoom: 'zoom.us',
+  'github-copilot': 'github.com',
+  icloud: 'icloud.com',
+  'google-one': 'one.google.com',
+  dropbox: 'dropbox.com',
+  mega: 'mega.io',
+  onedrive: 'onedrive.live.com',
+  pcloud: 'pcloud.com',
+  nordvpn: 'nordvpn.com',
+  surfshark: 'surfshark.com',
+  expressvpn: 'expressvpn.com',
+  'proton-vpn': 'protonvpn.com',
+  '1password': '1password.com',
+};
 import {
   WalletTrust,
   WalletMetamask,
@@ -92,6 +134,7 @@ const games = [
   { id: 'ea-sports-fc-mobile', name: 'EA SPORTS FC Mobile', icon: '/games/ea-sports-fc-mobile.jpg' },
   { id: 'honkai-star-rail', name: 'Honkai: Star Rail', icon: '/games/honkai-star-rail.jpg' },
   { id: 'arena-breakout', name: 'Arena Breakout', icon: '/games/arena-breakout.jpg' },
+  { id: 'steam', name: 'Steam', icon: '/games/steam.svg' },
 ];
 
 const gameArtwork = {
@@ -155,6 +198,9 @@ function App() {
   const [gamePlayerId, setGamePlayerId] = useState('');
   const [gameAccountData, setGameAccountData] = useState({});
   const [gamePayment, setGamePayment] = useState(null);
+  const [steamUsername, setSteamUsername] = useState('');
+  const [steamTopupAmount, setSteamTopupAmount] = useState('');
+  const [steamPayment, setSteamPayment] = useState(null);
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [selectedSubscriptionPlan, setSelectedSubscriptionPlan] = useState(null);
   const [subscriptionAccountDetails, setSubscriptionAccountDetails] = useState('');
@@ -202,6 +248,12 @@ function App() {
   const [nftPaymentMethod, setNftPaymentMethod] = useState('crypto');
   const [nftPayment, setNftPayment] = useState(null);
   const [nftRecipientUsername, setNftRecipientUsername] = useState('');
+  const [telegramProductType, setTelegramProductType] = useState('stars');
+  const [selectedTelegramPremiumPlan, setSelectedTelegramPremiumPlan] = useState('3m');
+  const [selectedTelegramStarsPackage, setSelectedTelegramStarsPackage] = useState(50);
+  const [telegramProductUsername, setTelegramProductUsername] = useState('');
+  const [telegramProductPayment, setTelegramProductPayment] = useState(null);
+
 
 
 
@@ -298,7 +350,11 @@ function App() {
       ? Number(subscriptionPayment?.cryptoAmount ?? 0)
       : paymentSource === 'nft'
         ? Number(nftPayment?.cryptoAmount ?? 0)
-        : totalAmount;
+        : paymentSource === 'telegram'
+          ? Number(telegramProductPayment?.cryptoAmount ?? 0)
+          : paymentSource === 'steam'
+            ? Number(steamPayment?.cryptoAmount ?? 0)
+            : totalAmount;
 
   const formatNumber = (value) =>
     new Intl.NumberFormat('ru-RU', {
@@ -556,6 +612,121 @@ function App() {
   };
 
 
+  const handleCreateSteamTopupOrder = async () => {
+    const username = steamUsername.trim();
+    const amountUSD = Number(steamTopupAmount);
+
+    if (!/^[A-Za-z0-9_-]{3,32}$/.test(username)) {
+      setOrderError('Укажите корректный Steam username.');
+      return;
+    }
+
+    if (!Number.isFinite(amountUSD) || amountUSD < 5) {
+      setOrderError('Минимальная сумма пополнения — 5 USD.');
+      return;
+    }
+
+    if (!addressesByCrypto[selectedCurrency]?.[selectedNetwork]) {
+      setOrderError('Выберите доступную сеть оплаты.');
+      return;
+    }
+
+    setOrderLoading(true);
+    setOrderError('');
+
+    try {
+      const result = await sendOrderAction('create_steam_topup_order', {
+        username,
+        amountUSD,
+        crypto: selectedCurrency,
+        network: selectedNetwork,
+      });
+
+      setOrderId(result.orderId);
+      localStorage.setItem('kronOrderId', result.orderId);
+      setOrderStatus('awaiting_payment');
+      setPaymentSource('steam');
+      setSteamPayment(result);
+      setPage('Криптооплата');
+    } catch (error) {
+      setOrderError(error.message || 'Не удалось создать заявку Steam.');
+    } finally {
+      setOrderLoading(false);
+    }
+  };
+
+  const handleCreateTelegramProductOrder = async () => {
+    const username = telegramProductUsername.trim().replace(/^@/, '');
+    if (!/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(username)) {
+      setOrderError('Укажите корректный Telegram username.');
+      return;
+    }
+
+    const premiumPlan = telegramProductType === 'premium'
+      ? telegramPremiumPlans.find((plan) => plan.id === selectedTelegramPremiumPlan)
+      : null;
+    const starsPackage = telegramProductType === 'stars'
+      ? telegramStarsPackages.find((item) => item.amount === Number(selectedTelegramStarsPackage))
+      : null;
+
+    if ((telegramProductType === 'premium' && !premiumPlan) ||
+        (telegramProductType === 'stars' && !starsPackage)) {
+      setOrderError('Выберите доступный пакет.');
+      return;
+    }
+
+    const walletAddress = addressesByCrypto[selectedCurrency]?.[selectedNetwork];
+    if (!walletAddress) {
+      setOrderError('Выберите доступную сеть оплаты.');
+      return;
+    }
+
+    setOrderLoading(true);
+    setOrderError('');
+
+    try {
+      const fragmentPrice = premiumPlan?.fragmentPrice ?? starsPackage?.fragmentPrice;
+      const priceUSD = getTelegramKronPrice(fragmentPrice);
+
+      const result = isLocalPreview
+        ? {
+            orderId: `KR-TEST-${Date.now()}`,
+            productName: telegramProductType === 'premium' ? 'Telegram Premium' : 'Пополнение Telegram Stars',
+            planName: premiumPlan?.name || `${starsPackage.amount.toLocaleString('ru-RU')} Stars`,
+            recipientUsername: username,
+            fragmentPriceUSD: fragmentPrice,
+            discountPercent: 5,
+            priceUSD,
+            crypto: selectedCurrency,
+            network: selectedNetwork,
+            cryptoAmount: Number(priceUSD.toFixed(selectedCurrency === 'BTC' || selectedCurrency === 'ETH' ? 8 : 6)),
+            walletAddress,
+            marketRate: 1,
+          }
+        : await sendOrderAction('create_telegram_product_order', {
+            productType: telegramProductType,
+            planId: premiumPlan?.id,
+            starsAmount: starsPackage?.amount,
+            recipientUsername: username,
+            crypto: selectedCurrency,
+            network: selectedNetwork,
+          });
+
+      setOrderId(result.orderId);
+      localStorage.setItem('kronOrderId', result.orderId);
+      setOrderStatus('awaiting_payment');
+      setPaymentSource('telegram');
+      setTelegramProductPayment(result);
+      setPage('Криптооплата');
+    } catch (error) {
+      setOrderError(error.message || 'Не удалось создать Telegram-заказ.');
+    } finally {
+      setOrderLoading(false);
+    }
+  };
+
+
+
   const handleCreateSubscriptionOrder = async () => {
     if (!selectedSubscription || !selectedSubscriptionPlan) {
       setOrderError('Выберите тариф подписки.');
@@ -570,12 +741,12 @@ function App() {
 
     const { plan } = found;
     const accountDetails = subscriptionAccountDetails.trim();
-    if (!accountDetails) {
-      setOrderError('Укажите данные аккаунта для оформления подписки.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(accountDetails)) {
+      setOrderError('Укажите корректный email для оформления подписки.');
       return;
     }
-    if (accountDetails.length > 300) {
-      setOrderError('Максимальная длина данных — 300 символов.');
+    if (accountDetails.length > 254) {
+      setOrderError('Email не должен превышать 254 символа.');
       return;
     }
     setOrderLoading(true);
@@ -851,12 +1022,14 @@ function App() {
           <button
             className="back"
             onClick={() => setPage(
-              page === 'game-detail' || page === 'subscription-detail' || page === 'nft-detail' ? 'Донат в игры' :
+              page === 'steam-topup' || page === 'game-detail' || page === 'subscription-detail' || page === 'nft-detail' || page === 'telegram-product-detail' ? 'Донат в игры' :
               page === 'Донат в игры' ? 'home' :
               page === 'Статус' || page === 'Админ-панель' ? 'home' :
               page === 'nft-stars-payment' ? 'nft-detail' :
               page === 'Криптооплата' && paymentSource === 'subscription' ? 'subscription-detail' :
               page === 'Криптооплата' && paymentSource === 'nft' ? 'nft-detail' :
+              page === 'Криптооплата' && paymentSource === 'telegram' ? 'telegram-product-detail' :
+              page === 'Криптооплата' && paymentSource === 'steam' ? 'steam-topup' :
               page === 'Криптооплата' ? 'Оплата' :
               page === 'Оплата' ? 'Курс валют' : 'home'
             )}
@@ -865,7 +1038,7 @@ function App() {
           </button>
 
           <p className="eyebrow">РАЗДЕЛ KRON</p>
-          <h1>{page === 'game-detail' ? selectedGame?.name : page === 'subscription-detail' ? selectedSubscription?.name : page === 'nft-detail' ? selectedNftGift?.name : page === 'nft-stars-payment' ? 'Оплата Stars' : page}</h1>
+          <h1>{page === 'steam-topup' ? 'Steam' : page === 'game-detail' ? selectedGame?.name : page === 'subscription-detail' ? selectedSubscription?.name : page === 'nft-detail' ? selectedNftGift?.name : page === 'telegram-product-detail' ? (telegramProductType === 'premium' ? 'Telegram Premium' : 'Telegram Stars') : page === 'nft-stars-payment' ? 'Оплата Stars' : page}</h1>
 
           {page === 'Донат в игры' && (
             <section className="donate-hub">
@@ -970,8 +1143,10 @@ function App() {
                     setSelectedGameProduct(null);
                     setGameAccountData({});
                     setGamePlayerId('');
+                    setSteamUsername('');
+                    setSteamTopupAmount('');
                     setOrderError('');
-                    setPage('game-detail');
+                    setPage(game.id === 'steam' ? 'steam-topup' : 'game-detail');
                   }}
                 >
                   <img className="game-tile-image" src={game.icon} alt={game.name} />
@@ -1009,7 +1184,18 @@ function App() {
                             }}
                           >
                             <span className="subscription-monogram">
-                              {service.name.split(/\s+/).map((word) => word[0]).slice(0, 2).join('').toUpperCase()}
+                              <img
+                                src={`https://www.google.com/s2/favicons?domain=${serviceLogoDomains[service.id]}&sz=128`}
+                                alt=""
+                                loading="lazy"
+                                onError={(event) => {
+                                  event.currentTarget.style.display = 'none';
+                                  event.currentTarget.nextElementSibling.style.display = 'grid';
+                                }}
+                              />
+                              <span className="subscription-monogram-fallback">
+                                {service.name.split(/\s+/).map((word) => word[0]).slice(0, 2).join('').toUpperCase()}
+                              </span>
                             </span>
                             <span className="subscription-name">{service.name}</span>
                           </button>
@@ -1096,6 +1282,46 @@ function App() {
                     <p>Выберите подарок. Цена указана в Telegram Stars.</p>
                   </div>
                   <span className="telegram-gifts-badge">GIFTS</span>
+                </div>
+
+                <div className="telegram-product-cards">
+                  <button
+                    type="button"
+                    className="telegram-product-card"
+                    onClick={() => {
+                      setTelegramProductType('stars');
+                      setTelegramProductUsername('');
+                      setOrderError('');
+                      setPage('telegram-product-detail');
+                    }}
+                  >
+                    <span className="telegram-product-card-icon">⭐</span>
+                    <span className="telegram-product-card-info">
+                      <strong>Telegram Stars</strong>
+                      <small>Пополнение баланса · Оплата криптовалютой</small>
+                    </span>
+                    <span className="telegram-product-card-arrow">›</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="telegram-product-card"
+                    onClick={() => {
+                      setTelegramProductType('premium');
+                      setTelegramProductUsername('');
+                      setOrderError('');
+                      setPage('telegram-product-detail');
+                    }}
+                  >
+                    <span className="telegram-product-card-icon">💎</span>
+                    <span className="telegram-product-card-info">
+                      <strong>Telegram Premium</strong>
+                      <small>Подписка на 3, 6 или 12 месяцев</small>
+                    </span>
+                    <span className="telegram-product-card-arrow">›</span>
+                  </button>
+                  <p className="telegram-product-note">
+                    Оплата USDT, USDC, BTC или ETH. Заказ выполняется менеджером вручную.
+                  </p>
                 </div>
 
                 {telegramGiftsLoading ? (
@@ -1240,19 +1466,116 @@ function App() {
                   </div>
                 )}
 
-                <div className="telegram-gift-coming">
-                  <div>
-                    <strong>⭐ Пополнение Telegram Stars</strong>
-                    <span>Оплата USDT</span>
-                  </div>
-                  <div>
-                    <strong>💎 Telegram Premium</strong>
-                    <span>Оплата USDT</span>
-                  </div>
-                  <p>Эти товары оформляются отдельно от каталога подарков.</p>
-                </div>
+
               </section>
             )
+          ) : page === 'steam-topup' ? (
+            <section className="game-checkout steam-topup-page">
+              <div className="game-checkout-heading">
+                <span className="game-checkout-step">STEAM TOP UP</span>
+                <h3>Пополнение баланса Steam</h3>
+                <p>Укажите Steam username и сумму пополнения в долларах</p>
+              </div>
+
+              <label className="field-label">
+                Steam username *
+                <input
+                  type="text"
+                  autoComplete="off"
+                  placeholder="Введите Steam username"
+                  value={steamUsername}
+                  onChange={(event) => {
+                    setSteamUsername(event.target.value);
+                    setOrderError('');
+                  }}
+                />
+              </label>
+
+              <label className="field-label">
+                Сумма пополнения (USD) *
+                <input
+                  type="number"
+                  min="5"
+                  step="0.01"
+                  placeholder="От 5 USD"
+                  value={steamTopupAmount}
+                  onChange={(event) => {
+                    setSteamTopupAmount(event.target.value);
+                    setOrderError('');
+                  }}
+                />
+              </label>
+
+              <p className="game-checkout-hint">Минимальная сумма пополнения — 5 USD</p>
+
+              <div className="steam-payment-summary">
+                <div className="steam-summary-row">
+                  <span>Сумма пополнения</span>
+                  <strong>${(Number(steamTopupAmount) || 0).toFixed(2)}</strong>
+                </div>
+                <div className="steam-summary-row">
+                  <span>Комиссия KRON <small>1,5%</small></span>
+                  <strong>${((Number(steamTopupAmount) || 0) * 0.015).toFixed(2)}</strong>
+                </div>
+                <div className="steam-summary-total">
+                  <span>Итого к оплате</span>
+                  <strong>${((Number(steamTopupAmount) || 0) * 1.015).toFixed(2)}</strong>
+                </div>
+              </div>
+
+              <div className="steam-choice-section">
+                <span className="steam-choice-title">Выберите криптовалюту</span>
+                <div className="steam-choice-grid">
+                  {['USDT', 'USDC', 'BTC', 'ETH'].map((crypto) => (
+                    <button
+                      type="button"
+                      key={crypto}
+                      className={`steam-choice ${selectedCurrency === crypto ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedCurrency(crypto);
+                        const networks = Object.keys(addressesByCrypto[crypto] || {});
+                        setSelectedNetwork(networks[0] || '');
+                        setOrderError('');
+                      }}
+                    >
+                      <span className="steam-choice-symbol">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '$'}</span>
+                      <span>{crypto}</span>
+                      {selectedCurrency === crypto && <span className="steam-choice-check">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="steam-choice-section">
+                <span className="steam-choice-title">Выберите сеть</span>
+                <div className="steam-network-list">
+                  {Object.keys(addressesByCrypto[selectedCurrency] || {}).map((network) => (
+                    <button
+                      type="button"
+                      key={network}
+                      className={`steam-network-choice ${selectedNetwork === network ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedNetwork(network);
+                        setOrderError('');
+                      }}
+                    >
+                      <span>{network}</span>
+                      {selectedNetwork === network && <span className="steam-choice-check">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="primary-button"
+                disabled={orderLoading || !/^[A-Za-z0-9_-]{3,32}$/.test(steamUsername.trim()) || !Number.isFinite(Number(steamTopupAmount)) || Number(steamTopupAmount) < 5}
+                onClick={handleCreateSteamTopupOrder}
+              >
+                {orderLoading ? 'Создаём заявку...' : 'Перейти к оплате'}
+              </button>
+              {orderError && <p className="calculator-note">{orderError}</p>}
+            </section>
           ) : page === 'game-detail' ? (
             selectedGame ? (
               <div className="game-detail">
@@ -1530,6 +1853,134 @@ function App() {
             ) : (
               <p className="subtitle">Сначала выберите NFT-подарок в каталоге.</p>
             )
+          ) : page === 'telegram-product-detail' ? (
+            <section className="subscription-detail telegram-product-detail">
+              <div className="subscription-detail-intro">
+                <p>
+                  {telegramProductType === 'premium'
+                    ? 'Выберите срок Telegram Premium'
+                    : 'Выберите количество Telegram Stars'}
+                </p>
+                <span>Оплата криптовалютой · Выполнение менеджером KRON</span>
+              </div>
+
+              <div className="subscription-plans">
+                {(telegramProductType === 'premium'
+                  ? telegramPremiumPlans
+                  : telegramStarsPackages
+                ).map((item) => {
+                  const selected = telegramProductType === 'premium'
+                    ? selectedTelegramPremiumPlan === item.id
+                    : Number(selectedTelegramStarsPackage) === item.amount;
+
+                  return (
+                    <button
+                      type="button"
+                      key={item.id}
+                      className={`subscription-plan ${selected ? 'selected' : ''}`}
+                      onClick={() => {
+                        if (telegramProductType === 'premium') {
+                          setSelectedTelegramPremiumPlan(item.id);
+                        } else {
+                          setSelectedTelegramStarsPackage(item.amount);
+                        }
+                        setOrderError('');
+                      }}
+                    >
+                      <span className="subscription-plan-name">
+                        {telegramProductType === 'premium'
+                          ? item.name
+                          : `${item.amount.toLocaleString('ru-RU')} Stars`}
+                      </span>
+                      <strong className="subscription-plan-price">
+                        ${getTelegramKronPrice(item.fragmentPrice).toFixed(2)}
+                      </strong>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="subscription-account-field">
+                <label htmlFor="telegram-product-username">Telegram username получателя</label>
+                <input
+                  id="telegram-product-username"
+                  type="text"
+                  value={telegramProductUsername}
+                  onChange={(event) => {
+                    setTelegramProductUsername(event.target.value);
+                    setOrderError('');
+                  }}
+                  placeholder="@username"
+                  maxLength={33}
+                  autoComplete="off"
+                />
+                <span>Укажите username аккаунта, на который оформить покупку.</span>
+              </div>
+
+              <div className="telegram-payment-choice">
+                <p className="field-label">Выберите криптовалюту</p>
+                <div className="currency-select">
+                  {cryptoCurrencies.map((currency) => (
+                    <button
+                      type="button"
+                      key={currency.id}
+                      className={`currency-option ${selectedCurrency === currency.id ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedCurrency(currency.id);
+                        setSelectedNetwork(networksByCrypto[currency.id][0]);
+                        setOrderError('');
+                      }}
+                    >
+                      {currency.id}
+                    </button>
+                  ))}
+                </div>
+
+                <p className="field-label">Сеть оплаты</p>
+                <div className="currency-select">
+                  {networksByCrypto[selectedCurrency].map((network) => (
+                    <button
+                      type="button"
+                      key={network}
+                      className={`currency-option ${selectedNetwork === network ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedNetwork(network);
+                        setOrderError('');
+                      }}
+                    >
+                      {network}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="telegram-product-total">
+                <span>Стоимость KRON</span>
+                <strong>
+                  ${getTelegramKronPrice(
+                    telegramProductType === 'premium'
+                      ? telegramPremiumPlans.find((item) => item.id === selectedTelegramPremiumPlan)?.fragmentPrice || 0
+                      : telegramStarsPackages.find((item) => item.amount === Number(selectedTelegramStarsPackage))?.fragmentPrice || 0
+                  ).toFixed(2)}
+                </strong>
+              </div>
+
+
+              <button
+                type="button"
+                className="primary-button"
+                disabled={
+                  orderLoading ||
+                  !/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(telegramProductUsername.trim().replace(/^@/, '')) ||
+                  !addressesByCrypto[selectedCurrency]?.[selectedNetwork]
+                }
+                onClick={handleCreateTelegramProductOrder}
+              >
+                {orderLoading ? 'Создаём заявку...' : 'Перейти к оплате'}
+              </button>
+
+              {orderError && <p className="calculator-note">{orderError}</p>}
+            </section>
           ) : page === 'subscription-detail' ? (
             selectedSubscription ? (
               <section className="subscription-detail">
@@ -1582,20 +2033,21 @@ function App() {
 
                 {selectedSubscriptionPlan && !selectedSubscription.plans.find((plan) => plan.id === selectedSubscriptionPlan)?.provisional && (
                   <div className="subscription-account-field">
-                    <label htmlFor="subscription-account-details">Куда оформить подписку?</label>
+                    <label htmlFor="subscription-account-details">Email для оформления подписки</label>
                     <input
                       id="subscription-account-details"
-                      type="text"
+                      type="email"
                       value={subscriptionAccountDetails}
                       onChange={(event) => {
                         setSubscriptionAccountDetails(event.target.value);
                         setOrderError('');
                       }}
-                      placeholder="Email, логин или username"
-                      maxLength={300}
-                      autoComplete="off"
+                      placeholder="example@email.com"
+                      maxLength={254}
+                      autoComplete="email"
+                      inputMode="email"
                     />
-                    <span>Укажите аккаунт для оформления. Не вводите пароль.</span>
+                    <span>Укажите email, на который нужно оформить подписку.</span>
                   </div>
                 )}
 
@@ -1604,7 +2056,7 @@ function App() {
                   className="primary-button"
                   disabled={
                     orderLoading ||
-                    !subscriptionAccountDetails.trim() ||
+                    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(subscriptionAccountDetails.trim()) ||
                     !selectedSubscriptionPlan ||
                     selectedSubscription.plans.find((plan) => plan.id === selectedSubscriptionPlan)?.provisional
                   }
@@ -1911,6 +2363,21 @@ function App() {
                   <span>{subscriptionPayment?.planName || selectedSubscription?.plans.find((plan) => plan.id === selectedSubscriptionPlan)?.name}</span>
                 </div>
               )}
+              {paymentSource === 'telegram' && (
+                <div className="payment-order-label">
+                  <strong>{telegramProductPayment?.productName}</strong>
+                  <span>{telegramProductPayment?.planName} · @{telegramProductPayment?.recipientUsername}</span>
+                </div>
+              )}
+              {paymentSource === 'steam' && (
+                <div className="payment-order-label">
+                  <strong>Пополнение Steam</strong>
+                  <span>Аккаунт: {steamPayment?.username || steamUsername}</span>
+                  <span>Пополнение: ${Number(steamPayment?.amountUSD ?? steamTopupAmount).toFixed(2)}</span>
+                  <span>Комиссия KRON (1,5%): ${Number(steamPayment?.commissionAmount ?? Number(steamTopupAmount) * 0.015).toFixed(2)}</span>
+                  <span>Итого: ${Number(steamPayment?.totalUSD ?? Number(steamTopupAmount) * 1.015).toFixed(2)}</span>
+                </div>
+              )}
               <p className="field-label">Сумма к оплате</p>
               <div className="payment-summary">
                 <strong>{formatNumber(paymentAmount)} {selectedCurrency}</strong>
@@ -2214,7 +2681,7 @@ function App() {
                       <p><strong>Группа:</strong> {order.order_data?.groupName}</p>
                       <p><strong>Сервис:</strong> {order.order_data?.serviceName}</p>
                       <p><strong>Тариф:</strong> {order.order_data?.planName}</p>
-                      <p><strong>Куда оформить:</strong> {order.order_data?.accountDetails || 'Не указано'}</p>
+                      <p><strong>Email для оформления:</strong> {order.order_data?.accountDetails || 'Не указано'}</p>
                       <p><strong>Цена:</strong> ${order.order_data?.priceUSD} USD</p>
                       {order.order_data?.annual && (
                         <p><strong>Месячный эквивалент:</strong> ${order.order_data?.monthlyKron} USD</p>

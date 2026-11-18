@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual, randomUUID } from 'node:crypto';
 import { gameCatalog, findGameProduct } from '../gameCatalog.js';
 import { findSubscriptionPlan } from '../subscriptionCatalog.js';
+import { findTelegramPremiumPlan, findTelegramStarsPackage, getTelegramKronPrice } from '../telegramProductCatalog.js';
 
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, (char) => ({
@@ -273,8 +274,8 @@ export default async function handler(req, res) {
       const serviceId = String(body.serviceId || '').trim();
       const planId = String(body.planId || '').trim();
       const accountDetails = String(body.accountDetails || '').trim();
-      if (!accountDetails || accountDetails.length > 300) {
-        return res.status(400).json({ ok: false, error: 'Укажите корректные данные аккаунта для оформления подписки.' });
+      if (accountDetails.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(accountDetails)) {
+        return res.status(400).json({ ok: false, error: 'Укажите корректный email для оформления подписки.' });
       }
       const crypto = String(body.crypto || '').trim().toUpperCase();
       const network = String(body.network || '').trim();
@@ -388,7 +389,7 @@ export default async function handler(req, res) {
         `Группа: ${escapeHtml(group.title)}`,
         `Сервис: <b>${escapeHtml(service.name)}</b>`,
         `Тариф: <b>${escapeHtml(plan.name)}</b>`,
-        `Данные для оформления: <code>${escapeHtml(accountDetails)}</code>`,
+        `Email для оформления: <code>${escapeHtml(accountDetails)}</code>`,
         ...(plan.annual ? [
           'Тип: годовая подписка',
           `Месячный эквивалент: ${escapeHtml(plan.monthlyKron ?? '—')} USD/мес.`,
@@ -416,6 +417,180 @@ export default async function handler(req, res) {
         planName: plan.name,
         annual: Boolean(plan.annual),
         monthlyKron: plan.monthlyKron ?? null,
+        priceUSD,
+        crypto,
+        network,
+        cryptoAmount,
+        walletAddress,
+        marketRate,
+        rateSource,
+        rateTimestamp,
+        notificationSent: Boolean(sent),
+      });
+    }
+
+
+    if (body.action === 'create_telegram_product_order') {
+      const productType = String(body.productType || '').trim().toLowerCase();
+      const recipientUsername = String(body.recipientUsername || '').trim().replace(/^@/, '');
+      const crypto = String(body.crypto || '').trim().toUpperCase();
+      const network = String(body.network || '').trim();
+
+      if (!['premium', 'stars'].includes(productType)) {
+        return res.status(400).json({ ok: false, error: 'Неизвестный продукт Telegram.' });
+      }
+      if (!/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(recipientUsername)) {
+        return res.status(400).json({ ok: false, error: 'Укажите корректный Telegram username получателя.' });
+      }
+
+      const walletAddress = allowedNetworksByCrypto[crypto]?.includes(network)
+        ? walletAddresses[crypto]?.[network]
+        : null;
+      if (!walletAddress) {
+        return res.status(400).json({ ok: false, error: 'Выбрана неподдерживаемая сеть оплаты.' });
+      }
+
+      let productName;
+      let planName;
+      let fragmentPrice;
+      let months = null;
+      let starsAmount = null;
+
+      if (productType === 'premium') {
+        const plan = findTelegramPremiumPlan(String(body.planId || '').trim());
+        if (!plan) {
+          return res.status(400).json({ ok: false, error: 'Выбранный срок Telegram Premium не найден.' });
+        }
+        productName = 'Telegram Premium';
+        planName = plan.name;
+        fragmentPrice = Number(plan.fragmentPrice);
+        months = plan.months;
+      } else {
+        const starsPackage = findTelegramStarsPackage(body.starsAmount);
+        if (!starsPackage) {
+          return res.status(400).json({ ok: false, error: 'Выбранный пакет Telegram Stars не найден.' });
+        }
+        productName = 'Пополнение Telegram Stars';
+        planName = `${starsPackage.amount.toLocaleString('ru-RU')} Stars`;
+        fragmentPrice = Number(starsPackage.fragmentPrice);
+        starsAmount = starsPackage.amount;
+      }
+
+      const priceUSD = getTelegramKronPrice(fragmentPrice);
+      if (!Number.isFinite(priceUSD) || priceUSD <= 0) {
+        return res.status(400).json({ ok: false, error: 'Не удалось рассчитать стоимость заказа.' });
+      }
+
+      let marketRate = 1;
+      let rateSource = 'USD ≈ USDT/USDC';
+      let rateTimestamp = new Date().toISOString();
+
+      if (crypto === 'BTC' || crypto === 'ETH') {
+        try {
+          const rateResponse = await fetch(
+            `https://api.binance.com/api/v3/ticker/price?symbol=${crypto}USDT`,
+            { signal: AbortSignal.timeout(8000) }
+          );
+          if (!rateResponse.ok) {
+            return res.status(503).json({ ok: false, error: 'Не удалось получить актуальный курс. Попробуйте ещё раз.' });
+          }
+          const rateData = await rateResponse.json();
+          marketRate = Number(rateData.price);
+          if (!Number.isFinite(marketRate) || marketRate <= 0) {
+            return res.status(503).json({ ok: false, error: 'Биржа вернула некорректный курс. Попробуйте позже.' });
+          }
+          rateSource = 'Binance';
+          rateTimestamp = new Date().toISOString();
+        } catch (error) {
+          console.error('Telegram product market rate error:', error.message);
+          return res.status(503).json({ ok: false, error: 'Не удалось получить курс Binance. Попробуйте ещё раз.' });
+        }
+      } else if (crypto !== 'USDT' && crypto !== 'USDC') {
+        return res.status(400).json({ ok: false, error: 'Неподдерживаемая криптовалюта.' });
+      }
+
+      const precision = crypto === 'BTC' || crypto === 'ETH' ? 8 : 6;
+      const cryptoAmount = Number((priceUSD / marketRate).toFixed(precision));
+      if (!Number.isFinite(cryptoAmount) || cryptoAmount <= 0) {
+        return res.status(400).json({ ok: false, error: 'Не удалось рассчитать сумму оплаты.' });
+      }
+
+      const orderId = `KR-${randomUUID().slice(0, 8).toUpperCase()}`;
+      const createdAt = new Intl.DateTimeFormat('ru-RU', {
+        timeZone: 'Europe/Chisinau',
+        dateStyle: 'short',
+        timeStyle: 'medium',
+      }).format(new Date());
+
+      const orderData = {
+        type: productType === 'premium' ? 'telegram_premium' : 'telegram_stars',
+        productName,
+        planName,
+        months,
+        starsAmount,
+        recipientUsername,
+        fragmentPriceUSD: fragmentPrice,
+        discountPercent: 5,
+        priceUSD,
+        crypto,
+        network,
+        cryptoAmount,
+        amount: cryptoAmount,
+        total: cryptoAmount,
+        marketRate,
+        rateSource,
+        rateTimestamp,
+        walletAddress,
+        fulfillment: 'manual',
+      };
+
+      await supabaseRequest('orders', {
+        method: 'POST',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          id: orderId,
+          user_id: user.id,
+          status: 'awaiting_payment',
+          order_data: orderData,
+        }),
+      });
+
+      const message = [
+        '💎 <b>НОВАЯ ЗАЯВКА KRON — TELEGRAM</b>',
+        `<b>Номер:</b> <code>${escapeHtml(orderId)}</code>`,
+        `<b>Дата:</b> ${escapeHtml(createdAt)} (Кишинёв)`,
+        '',
+        '<b>Клиент:</b>',
+        formatUser(user),
+        '',
+        `<b>Товар:</b> ${escapeHtml(productName)}`,
+        `<b>Пакет:</b> ${escapeHtml(planName)}`,
+        `<b>Получатель:</b> @${escapeHtml(recipientUsername)}`,
+        `Цена Fragment: ${fragmentPrice.toFixed(2)} USD`,
+        `Цена KRON: <b>${priceUSD.toFixed(2)} USD</b>`,
+        'Скидка KRON: 5%',
+        '',
+        '<b>Оплата:</b>',
+        `К оплате: <b>${cryptoAmount} ${escapeHtml(crypto)}</b>`,
+        `Курс: 1 ${escapeHtml(crypto)} = ${marketRate} USDT (${escapeHtml(rateSource)})`,
+        `Сеть: ${escapeHtml(network)}`,
+        `Адрес: <code>${escapeHtml(walletAddress)}</code>`,
+        '',
+        'Исполнение: вручную после подтверждения оплаты.',
+        'Статус: <b>Ожидает оплаты криптовалютой</b>',
+      ].join('\n');
+
+      const sent = await sendTelegramMessage(botToken, chatId, message);
+
+      return res.status(200).json({
+        ok: true,
+        orderId,
+        status: 'awaiting_payment',
+        productName,
+        planName,
+        recipientUsername,
+        fragmentPriceUSD: fragmentPrice,
+        discountPercent: 5,
         priceUSD,
         crypto,
         network,
@@ -548,6 +723,146 @@ export default async function handler(req, res) {
       });
     }
 
+    if (body.action === 'create_steam_topup_order') {
+      const username = String(body.username || '').trim();
+      const amountUSD = Number(body.amountUSD);
+      const crypto = String(body.crypto || '').trim().toUpperCase();
+      const network = String(body.network || '').trim();
+      const walletAddress = allowedNetworksByCrypto[crypto]?.includes(network)
+        ? walletAddresses[crypto]?.[network]
+        : null;
+
+      if (!/^[A-Za-z0-9_-]{3,32}$/.test(username)) {
+        return res.status(400).json({ ok: false, error: 'Укажите корректный Steam username.' });
+      }
+      if (!Number.isFinite(amountUSD) || amountUSD < 5) {
+        return res.status(400).json({ ok: false, error: 'Минимальная сумма пополнения — 5 USD.' });
+      }
+      if (!walletAddress) {
+        return res.status(400).json({ ok: false, error: 'Выбрана неподдерживаемая сеть оплаты.' });
+      }
+
+      const commissionPercent = 1.5;
+      const commissionAmount = Number((amountUSD * commissionPercent / 100).toFixed(2));
+      const totalUSD = Number((amountUSD + commissionAmount).toFixed(2));
+
+      let marketRate = 1;
+      let rateSource = 'USD ≈ USDT/USDC';
+      let rateTimestamp = new Date().toISOString();
+
+      if (crypto === 'BTC' || crypto === 'ETH') {
+        try {
+          const rateResponse = await fetch(
+            `https://api.binance.com/api/v3/ticker/price?symbol=${crypto}USDT`,
+            { signal: AbortSignal.timeout(8000) }
+          );
+          if (!rateResponse.ok) {
+            return res.status(503).json({ ok: false, error: 'Не удалось получить актуальный курс. Попробуйте ещё раз.' });
+          }
+          const rateData = await rateResponse.json();
+          marketRate = Number(rateData.price);
+          if (!Number.isFinite(marketRate) || marketRate <= 0) {
+            return res.status(503).json({ ok: false, error: 'Биржа вернула некорректный курс. Попробуйте позже.' });
+          }
+          rateSource = 'Binance';
+          rateTimestamp = new Date().toISOString();
+        } catch (error) {
+          console.error('Steam top-up market rate error:', error.message);
+          return res.status(503).json({ ok: false, error: 'Не удалось получить курс Binance. Попробуйте ещё раз.' });
+        }
+      } else if (crypto !== 'USDT' && crypto !== 'USDC') {
+        return res.status(400).json({ ok: false, error: 'Неподдерживаемая криптовалюта.' });
+      }
+
+      const precision = crypto === 'BTC' || crypto === 'ETH' ? 8 : 6;
+      const cryptoAmount = Number((totalUSD / marketRate).toFixed(precision));
+      if (!Number.isFinite(cryptoAmount) || cryptoAmount <= 0) {
+        return res.status(400).json({ ok: false, error: 'Не удалось рассчитать сумму оплаты.' });
+      }
+
+      const orderId = `KR-${randomUUID().slice(0, 8).toUpperCase()}`;
+      const createdAt = new Intl.DateTimeFormat('ru-RU', {
+        timeZone: 'Europe/Chisinau',
+        dateStyle: 'short',
+        timeStyle: 'medium',
+      }).format(new Date());
+
+      const orderData = {
+        type: 'steam_topup',
+        fulfillment: 'manual',
+        username,
+        amountUSD,
+        commissionPercent,
+        commissionAmount,
+        totalUSD,
+        crypto,
+        network,
+        cryptoAmount,
+        amount: cryptoAmount,
+        total: cryptoAmount,
+        walletAddress,
+        marketRate,
+        rateSource,
+        rateTimestamp,
+      };
+
+      await supabaseRequest('orders', {
+        method: 'POST',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          id: orderId,
+          user_id: user.id,
+          status: 'awaiting_payment',
+          order_data: orderData,
+        }),
+      });
+
+      const message = [
+        '🎮 <b>НОВАЯ ЗАЯВКА STEAM KRON</b>',
+        `<b>Номер:</b> <code>${orderId}</code>`,
+        `<b>Дата:</b> ${escapeHtml(createdAt)} (Кишинёв)`,
+        '',
+        '<b>Клиент:</b>',
+        formatUser(user),
+        '',
+        '<b>Пополнение Steam:</b>',
+        `Steam username: <code>${escapeHtml(username)}</code>`,
+        `Сумма пополнения: <b>${amountUSD.toFixed(2)} USD</b>`,
+        `Комиссия KRON (${commissionPercent}%): <b>${commissionAmount.toFixed(2)} USD</b>`,
+        `Итого: <b>${totalUSD.toFixed(2)} USD</b>`,
+        '',
+        '<b>Оплата:</b>',
+        `К оплате: <b>${cryptoAmount} ${escapeHtml(crypto)}</b>`,
+        `Курс: 1 ${escapeHtml(crypto)} = ${marketRate} USDT (${escapeHtml(rateSource)})`,
+        `Сеть: ${escapeHtml(network)}`,
+        `Адрес: <code>${escapeHtml(walletAddress)}</code>`,
+        '',
+        'Выполнение: вручную менеджером KRON',
+        'Статус: <b>Ожидает оплаты криптовалютой</b>',
+      ].join('\n');
+
+      const sent = await sendTelegramMessage(botToken, chatId, message);
+
+      return res.status(200).json({
+        ok: true,
+        orderId,
+        status: 'awaiting_payment',
+        username,
+        amountUSD,
+        commissionPercent,
+        commissionAmount,
+        totalUSD,
+        crypto,
+        network,
+        cryptoAmount,
+        walletAddress,
+        marketRate,
+        rateSource,
+        rateTimestamp,
+        notificationSent: Boolean(sent),
+      });
+    }
+
     if (body.action === 'update_network') {
       const orderId = String(body.orderId || '').slice(0, 40);
       const crypto = String(body.crypto || '');
@@ -642,15 +957,25 @@ export default async function handler(req, res) {
 
       const orderData = updated[0].order_data || {};
       const isGameOrder = orderData.type === 'game';
+      const isSteamTopupOrder = orderData.type === 'steam_topup';
       const isSubscriptionOrder = orderData.type === 'subscription';
       const isNftOrder = orderData.type === 'nft';
       const isNftStars = isNftOrder && orderData.paymentMethod === 'stars';
+      const isTelegramProductOrder = ['telegram_premium', 'telegram_stars'].includes(orderData.type);
 
       const message = [
         '🟡 <b>КЛИЕНТ СООБЩИЛ ОБ ОТПРАВКЕ</b>',
         `<b>Заявка:</b> <code>${escapeHtml(orderId)}</code>`,
         `<b>Клиент:</b> ${formatUser(user)}`,
         '',
+        ...(isSteamTopupOrder ? [
+          '<b>Пополнение Steam:</b>',
+          `Steam username: <code>${escapeHtml(orderData.username || '—')}</code>`,
+          `Сумма пополнения: ${escapeHtml(orderData.amountUSD ?? '—')} USD`,
+          `Комиссия KRON (${escapeHtml(orderData.commissionPercent ?? 1.5)}%): ${escapeHtml(orderData.commissionAmount ?? '—')} USD`,
+          `Итого: ${escapeHtml(orderData.totalUSD ?? '—')} USD`,
+          'Выполнение: вручную менеджером KRON',
+        ] : []),
         ...(isGameOrder ? [
           '<b>Игровой заказ:</b>',
           `Игра: <b>${escapeHtml(orderData.game || '—')}</b>`,
@@ -668,6 +993,16 @@ export default async function handler(req, res) {
             `Месячный эквивалент: ${escapeHtml(orderData.monthlyKron ?? '—')} USD/мес.`,
             `Полная стоимость: ${escapeHtml(orderData.priceUSD ?? '—')} USD за год`,
           ] : [`Стоимость: ${escapeHtml(orderData.priceUSD ?? '—')} USD`]),
+        ] : []),
+        ...(isTelegramProductOrder ? [
+          '<b>Telegram-заказ:</b>',
+          `Товар: <b>${escapeHtml(orderData.productName || '—')}</b>`,
+          `Пакет: <b>${escapeHtml(orderData.planName || '—')}</b>`,
+          `Получатель: @${escapeHtml(orderData.recipientUsername || '—')}`,
+          `Цена Fragment: ${escapeHtml(orderData.fragmentPriceUSD ?? '—')} USD`,
+          `Цена KRON: ${escapeHtml(orderData.priceUSD ?? '—')} USD`,
+          `Скидка: ${escapeHtml(orderData.discountPercent ?? 5)}%`,
+          'Исполнение: вручную после подтверждения оплаты',
         ] : []),
         ...(isNftOrder ? [
           '<b>NFT-подарок:</b>',
